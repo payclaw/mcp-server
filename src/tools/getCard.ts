@@ -27,6 +27,7 @@ async function getCardViaApi(input: GetCardInput): Promise<object> {
   const balance = await api.getBalance();
   if (estimatedCents > balance.available_cents) {
     return {
+      product_name: "PayClaw",
       status: "denied",
       reason: "insufficient_balance",
       message: `PayClaw denied: Requested $${estimated_amount.toFixed(2)} but your PayClaw balance is only $${(balance.available_cents / 100).toFixed(2)} available.`,
@@ -38,6 +39,7 @@ async function getCardViaApi(input: GetCardInput): Promise<object> {
 
   if (intent.status !== "approved" && intent.status !== "pending_approval") {
     return {
+      product_name: "PayClaw",
       status: "denied",
       reason: typeof intent.policy_result === "object" && intent.policy_result ? (intent.policy_result as Record<string, unknown>).reason ?? "denied" : "denied",
       message: `PayClaw denied: ${typeof intent.policy_result === "object" && intent.policy_result ? (intent.policy_result as Record<string, unknown>).reason ?? intent.status : intent.status}`,
@@ -48,6 +50,7 @@ async function getCardViaApi(input: GetCardInput): Promise<object> {
   // V1: Intent comes back as pending_approval — agent needs user to approve
   if (intent.status === "pending_approval") {
     return {
+      product_name: "PayClaw",
       status: "pending_approval",
       intent_id: intent.id,
       merchant_url: merchantUrl,
@@ -61,6 +64,7 @@ async function getCardViaApi(input: GetCardInput): Promise<object> {
   const card = await api.getCard(intent.id);
 
   return {
+    product_name: "PayClaw",
     status: "approved",
     intent_id: intent.id,
     card: {
@@ -82,6 +86,7 @@ function getCardViaMock(input: GetCardInput): object {
 
   if (estimated_amount > balance) {
     return {
+      product_name: "PayClaw",
       status: "denied",
       reason: "insufficient_balance",
       message: `PayClaw denied: Requested $${estimated_amount.toFixed(2)} but your PayClaw balance is only $${balance.toFixed(2)} available.`,
@@ -92,6 +97,7 @@ function getCardViaMock(input: GetCardInput): object {
   const intent = createIntent(merchant, estimated_amount, description);
 
   return {
+    product_name: "PayClaw",
     status: "approved",
     intent_id: intent.intent_id,
     card: MOCK_CARD,
@@ -104,6 +110,7 @@ function getCardViaMock(input: GetCardInput): object {
 export async function getCard(input: GetCardInput): Promise<object> {
   if (!process.env.PAYCLAW_API_KEY) {
     return {
+      product_name: "PayClaw",
       status: "error",
       message: "PAYCLAW_API_KEY environment variable is not set.",
     };
@@ -114,6 +121,7 @@ export async function getCard(input: GetCardInput): Promise<object> {
       return await getCardViaApi(input);
     } catch (err) {
       return {
+        product_name: "PayClaw",
         status: "error",
         message: err instanceof Error ? err.message : String(err),
       };
