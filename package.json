@@ -27,13 +27,13 @@
     "claude",
     "openai"
   ],
-  "author": "PayClaw <hello@payclaw.com>",
+  "author": "PayClaw <hello@payclaw.io>",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/payclaw/mcp-server.git"
   },
-  "homepage": "https://payclaw.com",
+  "homepage": "https://payclaw.io",
   "bugs": {
     "url": "https://github.com/payclaw/mcp-server/issues"
   },

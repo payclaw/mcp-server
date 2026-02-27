@@ -7,8 +7,21 @@ export interface GetCardInput {
   description: string;
 }
 
+/**
+ * Normalize merchant input to a full URL.
+ * Claude might send "amazon.com", "www.amazon.com", or "https://amazon.com"
+ */
+function normalizeMerchantUrl(merchant: string): string {
+  const trimmed = merchant.trim().replace(/^\/\//, "");
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+}
+
 async function getCardViaApi(input: GetCardInput): Promise<object> {
   const { merchant, estimated_amount, description } = input;
+  const merchantUrl = normalizeMerchantUrl(merchant);
   const estimatedCents = Math.round(estimated_amount * 100);
 
   const balance = await api.getBalance();
@@ -21,13 +34,26 @@ async function getCardViaApi(input: GetCardInput): Promise<object> {
     };
   }
 
-  const intent = await api.createIntent(merchant, estimatedCents, description);
+  const intent = await api.createIntent(merchantUrl, estimatedCents, description);
 
-  if (intent.status !== "approved") {
+  if (intent.status !== "approved" && intent.status !== "pending_approval") {
     return {
       status: "denied",
       reason: typeof intent.policy_result === "object" && intent.policy_result ? (intent.policy_result as Record<string, unknown>).reason ?? "denied" : "denied",
       message: `Intent denied: ${typeof intent.policy_result === "object" && intent.policy_result ? (intent.policy_result as Record<string, unknown>).reason ?? intent.status : intent.status}`,
+      remaining_balance: balance.available_cents / 100,
+    };
+  }
+
+  // V1: Intent comes back as pending_approval — agent needs user to approve
+  if (intent.status === "pending_approval") {
+    return {
+      status: "pending_approval",
+      intent_id: intent.id,
+      merchant_url: merchantUrl,
+      estimated_amount: estimated_amount,
+      message: `Purchase requires user approval. Ask the user to approve $${estimated_amount.toFixed(2)} at ${merchant}.`,
+      approve_endpoint: `/api/intents/${intent.id}/approve`,
       remaining_balance: balance.available_cents / 100,
     };
   }
