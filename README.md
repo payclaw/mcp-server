@@ -5,6 +5,12 @@ The PayClaw MCP server lets AI agents make real purchases using disposable virtu
 [![npm version](https://img.shields.io/npm/v/@payclaw/mcp-server.svg)](https://www.npmjs.com/package/@payclaw/mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+<p align="center">
+  <img src="docs/demo.gif" alt="PayClaw Demo — Claude buying cold brew on Amazon" width="640" />
+  <br />
+  <em>Claude searches Amazon, navigates Whole Foods sign-in walls, picks Starbucks Cold Brew, gets a PayClaw card, and is ready to checkout — in one prompt.</em>
+</p>
+
 ---
 
 ## What is PayClaw?
