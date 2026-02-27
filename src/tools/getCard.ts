@@ -24,23 +24,17 @@ async function getCardViaApi(input: GetCardInput): Promise<object> {
   const merchantUrl = normalizeMerchantUrl(merchant);
   const estimatedCents = Math.round(estimated_amount * 100);
 
-  const balance = await api.getBalance();
-  if (estimatedCents > balance.available_cents) {
-    return {
-      product_name: "PayClaw",
-      status: "denied",
-      reason: "insufficient_balance",
-      message: `PayClaw denied: Requested $${estimated_amount.toFixed(2)} but your PayClaw balance is only $${(balance.available_cents / 100).toFixed(2)} available.`,
-      remaining_balance: balance.available_cents / 100,
-    };
-  }
-
+  // Always create the intent — let the server-side policy engine decide.
+  // This ensures denied intents are recorded in the database and visible
+  // in the user's dashboard activity feed.
   const intent = await api.createIntent(merchantUrl, estimatedCents, description);
 
   if (intent.status !== "approved" && intent.status !== "pending_approval") {
+    const balance = await api.getBalance();
     return {
       product_name: "PayClaw",
       status: "denied",
+      intent_id: intent.id,
       reason: typeof intent.policy_result === "object" && intent.policy_result ? (intent.policy_result as Record<string, unknown>).reason ?? "denied" : "denied",
       message: `PayClaw denied: ${typeof intent.policy_result === "object" && intent.policy_result ? (intent.policy_result as Record<string, unknown>).reason ?? intent.status : intent.status}`,
       remaining_balance: balance.available_cents / 100,
@@ -49,6 +43,7 @@ async function getCardViaApi(input: GetCardInput): Promise<object> {
 
   // V1: Intent comes back as pending_approval — agent needs user to approve
   if (intent.status === "pending_approval") {
+    const balance = await api.getBalance();
     return {
       product_name: "PayClaw",
       status: "pending_approval",
@@ -61,6 +56,7 @@ async function getCardViaApi(input: GetCardInput): Promise<object> {
     };
   }
 
+  const balance = await api.getBalance();
   const card = await api.getCard(intent.id);
 
   return {
