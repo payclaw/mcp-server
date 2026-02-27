@@ -8,47 +8,21 @@ export interface GetCardInput {
 }
 
 /**
- * Normalize merchant input to a full URL.
+ * Minimal merchant normalization — add https:// if no protocol present.
  *
- * Claude sends merchants in many formats:
- *   "amazon.com"               → "https://amazon.com"
- *   "AMAZON.COM"               → "https://amazon.com"
- *   "amazon .com"              → "https://amazon.com"   (internal space)
- *   "dominos.com."             → "https://dominos.com"  (trailing dot)
- *   "www.amazon.com"           → "https://www.amazon.com"
- *   "https://amazon.com/dp/…"  → unchanged
- *   "Amazon"                   → "Amazon"               (brand name, pass-through)
- *   "the amazon website"       → "the amazon website"   (natural language, pass-through)
+ * The merchant field is human-readable intent text, not a validated URL.
+ * The user reads and approves it before any card is issued. Lithic captures
+ * the actual merchant at authorization time. Heavy URL normalization adds
+ * complexity with no security or UX benefit.
  *
- * Rule: if the input contains a dot or slash it's treated as domain-like and normalized.
- * Otherwise it's passed through — the app-side validateMerchantUrl accepts merchant names too.
+ * See DQ-35.
  */
 function normalizeMerchantUrl(merchant: string): string {
-  const trimmed = merchant.trim();
-
-  // Already has a protocol — return as-is
+  const trimmed = merchant.trim().replace(/^\/\//, "");
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
     return trimmed;
   }
-
-  // Strip leading //
-  const withoutSlashes = trimmed.replace(/^\/\//, "");
-
-  // Determine if this looks like a domain or path (has a dot or slash)
-  const hasDot = withoutSlashes.includes(".");
-  const hasSlash = withoutSlashes.includes("/");
-
-  if (!hasDot && !hasSlash) {
-    // Brand name or natural language — pass through unchanged
-    return trimmed;
-  }
-
-  // Domain-like input: clean up and add protocol
-  const noInternalSpaces = withoutSlashes.replace(/\s+/g, ""); // "amazon .com" → "amazon.com"
-  const lowercased = noInternalSpaces.toLowerCase();
-  const noTrailingDot = lowercased.replace(/\.$/, ""); // "dominos.com." → "dominos.com"
-
-  return `https://${noTrailingDot}`;
+  return `https://${trimmed}`;
 }
 
 async function getCardViaApi(input: GetCardInput): Promise<object> {
