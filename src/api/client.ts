@@ -15,11 +15,22 @@ class PayClawApiError extends Error {
   }
 }
 
+/** SEC-010: Default timeout for all API requests (30 seconds) */
+const REQUEST_TIMEOUT_MS = 30_000;
+
 function getConfig() {
   const baseUrl = process.env.PAYCLAW_API_URL;
   const apiKey = process.env.PAYCLAW_API_KEY;
-  if (!baseUrl) throw new PayClawApiError("PAYCLAW_API_URL is not set.");
-  if (!apiKey) throw new PayClawApiError("PAYCLAW_API_KEY is not set.");
+  if (!baseUrl) throw new PayClawApiError("PayClaw API URL is not configured.");
+  if (!apiKey) throw new PayClawApiError("PayClaw API key is not configured.");
+
+  // SEC-009: Require HTTPS in production
+  if (!baseUrl.startsWith("https://") && !baseUrl.startsWith("http://localhost")) {
+    throw new PayClawApiError(
+      "PayClaw API URL must use HTTPS for security.",
+    );
+  }
+
   return { baseUrl: baseUrl.replace(/\/+$/, ""), apiKey };
 }
 
@@ -31,18 +42,27 @@ function authHeaders(apiKey: string): Record<string, string> {
 }
 
 async function request<T>(url: string, init: RequestInit): Promise<T> {
+  // SEC-010: Add timeout to prevent indefinite hangs
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
   let res: Response;
   try {
-    res = await fetch(url, init);
-  } catch {
-    throw new PayClawApiError(
-      `Could not reach PayClaw API at ${url}. Check PAYCLAW_API_URL.`,
-    );
+    res = await fetch(url, { ...init, signal: controller.signal });
+  } catch (err) {
+    clearTimeout(timeout);
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new PayClawApiError("Request timed out. Please try again.");
+    }
+    // SEC-013: Generic error message — don't leak URL or config details
+    throw new PayClawApiError("Could not reach the PayClaw API. Please check your configuration.");
+  } finally {
+    clearTimeout(timeout);
   }
 
   if (res.status === 401) {
     throw new PayClawApiError(
-      "Authentication failed. Check your PAYCLAW_API_KEY.",
+      "Authentication failed. Please check your API key.",
       401,
     );
   }

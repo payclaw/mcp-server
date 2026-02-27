@@ -7,3 +7,9 @@ dist/
 .DS_Store
 coverage/
 .turbo/
+
+# SEC-018: MCP client configs that may contain API keys
+claude_desktop_config.json
+.cursor/
+.claude/
+mcp.json
