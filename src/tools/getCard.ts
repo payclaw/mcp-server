@@ -8,8 +8,14 @@ export interface GetCardInput {
 }
 
 /**
- * Normalize merchant input to a full URL.
- * Claude might send "amazon.com", "www.amazon.com", or "https://amazon.com"
+ * Minimal merchant normalization — add https:// if no protocol present.
+ *
+ * The merchant field is human-readable intent text, not a validated URL.
+ * The user reads and approves it before any card is issued. Lithic captures
+ * the actual merchant at authorization time. Heavy URL normalization adds
+ * complexity with no security or UX benefit.
+ *
+ * See DQ-35.
  */
 function normalizeMerchantUrl(merchant: string): string {
   const trimmed = merchant.trim().replace(/^\/\//, "");
