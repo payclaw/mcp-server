@@ -2,6 +2,8 @@
 
 The PayClaw MCP server lets AI agents make real purchases using disposable virtual cards — without ever touching your real credit card.
 
+> 🧪 **Developer Sandbox is open.** Try the full MCP flow with real Lithic sandbox cards and test deposits. [Get sandbox access →](https://payclaw.io)
+
 [![npm version](https://img.shields.io/npm/v/@payclaw/mcp-server.svg)](https://www.npmjs.com/package/@payclaw/mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
@@ -21,7 +23,8 @@ PayClaw issues virtual cards for AI agents with spend limits, merchant restricti
 
 ### 1. Get your API key
 
-Sign up at [payclaw.io](https://payclaw.io) and generate an API key from your dashboard.
+Sign up for a free sandbox account at [payclaw.io](https://payclaw.io).
+Fund your sandbox with test card `4242 4242 4242 4242` and generate an API key from your dashboard.
 
 ### 2. Install
 
@@ -80,6 +83,33 @@ Tell your agent to buy something. That's it.
 > "Buy me two large pepperoni pizzas from Domino's, keep it under $30."
 
 The agent will call `payclaw_getCard`, get a virtual card, complete checkout, and report back.
+
+---
+
+## Sandbox Mode
+
+PayClaw's sandbox uses real infrastructure with test money:
+
+- **Real Lithic-issued virtual cards** (sandbox environment)
+- **Real Stripe payment flow** (test mode)
+- **Real MCP calls** (identical to production)
+
+When production opens, update one env var. Nothing else in your code changes.
+
+### Test without an account
+
+If `PAYCLAW_API_URL` is not set, the MCP server runs in offline mock mode with a $500 starting balance and a fake card. Useful for testing MCP integration before signing up.
+
+### Test with a sandbox account
+
+Sign up at [payclaw.io](https://payclaw.io), fund with test card `4242 4242 4242 4242`, and set:
+
+```bash
+PAYCLAW_API_KEY=pk_test_your_key
+PAYCLAW_API_URL=https://payclaw.io
+```
+
+Your agent will get real Lithic sandbox cards back from `getCard()`.
 
 ---
 
