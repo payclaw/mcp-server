@@ -82,7 +82,7 @@ The agent will call `payclaw_getCard`, get a virtual card, complete checkout, an
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `PAYCLAW_API_KEY` | ✅ | Your API key from the PayClaw dashboard (`pk_live_...` or `pk_test_...`) |
-| `PAYCLAW_API_URL` | ✅ | PayClaw API URL (`https://payclaw.io` for production) |
+| `PAYCLAW_API_URL` | optional | PayClaw API URL (`https://payclaw.io` for production). If omitted, runs in offline mock mode. |
 
 > **Offline/dev mode:** If `PAYCLAW_API_URL` is not set, the server runs with a local mock store ($500 starting balance, fake card). Useful for testing MCP integration without a PayClaw account.
 
@@ -122,6 +122,7 @@ Request a virtual card for making a purchase. The agent must declare what it int
 
 **Possible statuses:**
 - `approved` — card issued, proceed with purchase
+- `pending_approval` — user confirmation required (Always Ask mode); prompt the user to approve the spend in their PayClaw dashboard, then retry
 - `denied` — policy check failed (insufficient balance, merchant not whitelisted, etc.)
 - `error` — configuration issue (missing API key, API unreachable, etc.)
 

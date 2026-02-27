@@ -1,6 +1,6 @@
 {
   "name": "@payclaw/mcp-server",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "PayClaw MCP server \u2014 virtual cards for AI agents",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -46,10 +46,15 @@
     "LICENSE"
   ],
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.27.1"
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "zod": "^3.24.0 || ^4.0.0"
   },
   "devDependencies": {
     "@types/node": "^25.3.0",
-    "typescript": "^5.9.3"
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.0.0"
   }
 }

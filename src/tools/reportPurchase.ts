@@ -94,6 +94,13 @@ function reportViaMock(input: ReportPurchaseInput): object {
 }
 
 export async function reportPurchase(input: ReportPurchaseInput): Promise<object> {
+  if (!process.env.PAYCLAW_API_KEY) {
+    return {
+      status: "error",
+      message: "PAYCLAW_API_KEY environment variable is not set.",
+    };
+  }
+
   if (api.isApiMode()) {
     try {
       return await reportViaApi(input);
