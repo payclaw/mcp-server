@@ -1,6 +1,6 @@
 {
   "name": "@payclaw/mcp-server",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "PayClaw MCP server — virtual cards for AI agents",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
