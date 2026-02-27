@@ -191,14 +191,35 @@ Transaction logged to your dashboard
 
 ## Security
 
-- **Your real card is never exposed.** Agents operate on isolated virtual cards with capped balances.
-- **Intent-based authorization.** Agents must declare what they're buying before card access is granted.
-- **Post-purchase audit.** Every transaction is auto-compared against the declared intent. Mismatches are flagged.
-- **Mandatory MFA.** All accounts require authenticator app (TOTP) — no exceptions.
-- **API keys are hashed, not stored.** Same approach as Stripe. [Read our security docs →](https://payclaw.io/docs/security)
+PayClaw is built on a **zero-trust architecture** for AI agent payments.
+
+### Trust by Design
+
+- **Zero standing access.** Your agent has no persistent financial state — it cannot query balance, view card numbers, or access transaction history without an approved intent.
+- **Human-in-the-loop.** Every purchase requires explicit user approval via MFA-protected dashboard. API keys cannot approve intents — only the human can.
+- **Ephemeral credentials.** Card-per-transaction by design. Each approved purchase gets a fresh virtual card. Your agent never accumulates card credentials between tasks.
+- **Intent reconciliation.** Every transaction is auto-compared against the declared intent. Estimated vs. actual spend mismatches are flagged automatically.
+
+### Infrastructure
+
+- **Card data never stored.** Card credentials exist only in the transient API response — never persisted on PayClaw servers.
+- **API keys hashed, not stored.** SHA-256 with timing-safe comparison. Same approach as Stripe.
 - **$500 balance ceiling.** Maximum exposure per account is hard-capped.
-- **Instant revocation.** Kill your API key or freeze your card from the dashboard at any time.
-- **Built on PCI-compliant infrastructure.** Card credentials are never stored on PayClaw servers.
+- **15-minute intent expiry.** Unused approvals expire automatically. No indefinite card holding.
+- **HTTPS enforced.** The MCP server rejects non-HTTPS API URLs.
+- **Input bounds.** All inputs validated with maximum lengths and amounts at the MCP layer.
+- **30-second timeout.** API calls timeout automatically — your agent won't hang indefinitely.
+- **PCI-compliant infrastructure.** Stripe Elements for funding (SAQ-A), Lithic for card issuing (PCI Level 1).
+
+### Continuous Security
+
+- Daily automated code scanning and dependency auditing
+- AI code review on every PR (CodeRabbit)
+- Secret scanning on every commit (gitleaks)
+- Penetration testing simulation every other day
+
+For security issues: **security@payclaw.io**
+
 
 ## Compatibility
 
