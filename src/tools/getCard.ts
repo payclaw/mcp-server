@@ -29,7 +29,7 @@ async function getCardViaApi(input: GetCardInput): Promise<object> {
     return {
       status: "denied",
       reason: "insufficient_balance",
-      message: `Requested $${estimated_amount.toFixed(2)} but only $${(balance.available_cents / 100).toFixed(2)} available.`,
+      message: `PayClaw denied: Requested $${estimated_amount.toFixed(2)} but your PayClaw balance is only $${(balance.available_cents / 100).toFixed(2)} available.`,
       remaining_balance: balance.available_cents / 100,
     };
   }
@@ -40,7 +40,7 @@ async function getCardViaApi(input: GetCardInput): Promise<object> {
     return {
       status: "denied",
       reason: typeof intent.policy_result === "object" && intent.policy_result ? (intent.policy_result as Record<string, unknown>).reason ?? "denied" : "denied",
-      message: `Intent denied: ${typeof intent.policy_result === "object" && intent.policy_result ? (intent.policy_result as Record<string, unknown>).reason ?? intent.status : intent.status}`,
+      message: `PayClaw denied: ${typeof intent.policy_result === "object" && intent.policy_result ? (intent.policy_result as Record<string, unknown>).reason ?? intent.status : intent.status}`,
       remaining_balance: balance.available_cents / 100,
     };
   }
@@ -52,7 +52,7 @@ async function getCardViaApi(input: GetCardInput): Promise<object> {
       intent_id: intent.id,
       merchant_url: merchantUrl,
       estimated_amount: estimated_amount,
-      message: `Purchase requires user approval. Ask the user to approve $${estimated_amount.toFixed(2)} at ${merchant}.`,
+      message: `PayClaw requires your approval. Ask the user to approve $${estimated_amount.toFixed(2)} at ${merchant}.`,
       approve_endpoint: `/api/intents/${intent.id}/approve`,
       remaining_balance: balance.available_cents / 100,
     };
@@ -84,7 +84,7 @@ function getCardViaMock(input: GetCardInput): object {
     return {
       status: "denied",
       reason: "insufficient_balance",
-      message: `Requested $${estimated_amount.toFixed(2)} but only $${balance.toFixed(2)} available.`,
+      message: `PayClaw denied: Requested $${estimated_amount.toFixed(2)} but your PayClaw balance is only $${balance.toFixed(2)} available.`,
       remaining_balance: balance,
     };
   }

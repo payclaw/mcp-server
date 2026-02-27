@@ -12,7 +12,7 @@ const server = new McpServer({
 
 server.tool(
   "payclaw_getCard",
-  "Get a virtual card to make a purchase on behalf of the user. Returns card details and an intent_id. Call payclaw_reportPurchase after the transaction.",
+  "Get a PayClaw virtual card to make a purchase on behalf of the user. Returns card details and an intent_id. Call payclaw_reportPurchase after the transaction.",
   {
     merchant: z.string().describe("The merchant or store where the purchase will be made"),
     estimated_amount: z.number().positive().describe("Estimated purchase amount in USD"),
@@ -28,7 +28,7 @@ server.tool(
 
 server.tool(
   "payclaw_reportPurchase",
-  "Report the outcome of a purchase after using a card from payclaw_getCard. Must be called after every purchase attempt.",
+  "Report the outcome of a purchase after using a PayClaw card from payclaw_getCard. Must be called after every purchase attempt.",
   {
     intent_id: z.string().describe("The intent_id returned by payclaw_getCard"),
     success: z.boolean().describe("Whether the purchase succeeded"),
