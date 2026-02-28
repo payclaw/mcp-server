@@ -46,6 +46,13 @@ export interface ApiCardResponse {
   last_four: string;
   cardholder_name: string;
   intent_id: string;
+  identity?: {
+    agent_disclosure: string;
+    verification_token: string;
+    trust_url: string;
+    contact: string;
+  };
+  badge_warning?: string;
 }
 
 export interface ApiTransactionResponse {
@@ -62,4 +69,13 @@ export interface ApiBalanceResponse {
   held_cents: number;
   available_cents: number;
   balance_limit_cents: number;
+}
+
+export interface ApiAgentIdentityResponse {
+  agent_disclosure: string;
+  verification_token: string;
+  trust_url: string;
+  contact: string;
+  principal_verified: boolean;
+  mfa_confirmed: boolean;
 }

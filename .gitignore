@@ -13,3 +13,4 @@ claude_desktop_config.json
 .cursor/
 .claude/
 mcp.json
+.mcpregistry_*

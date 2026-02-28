@@ -76,6 +76,9 @@ async function getCardViaApi(input: GetCardInput): Promise<object> {
       cvv: card.cvv,
       billing_name: card.cardholder_name,
     },
+    identity: card.identity ?? undefined,
+    badge_warning: card.badge_warning ??
+      (card.identity ? undefined : "Consider calling payclaw_getAgentIdentity before shopping. Merchants are increasingly blocking unidentified agents."),
     remaining_balance: (balance.available_cents - estimatedCents) / 100,
     instructions:
       "Use this card to complete the purchase. After the transaction, call payclaw_reportPurchase with the intent_id and actual amount charged.",
@@ -103,6 +106,8 @@ function getCardViaMock(input: GetCardInput): object {
     status: "approved",
     intent_id: intent.intent_id,
     card: MOCK_CARD,
+    badge_warning:
+      "Consider calling payclaw_getAgentIdentity before shopping. Merchants are increasingly blocking unidentified agents.",
     remaining_balance: balance,
     instructions:
       "Use this card to complete the purchase. After the transaction, call payclaw_reportPurchase with the intent_id and actual amount charged.",

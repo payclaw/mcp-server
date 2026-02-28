@@ -3,6 +3,7 @@ import type {
   ApiCardResponse,
   ApiTransactionResponse,
   ApiBalanceResponse,
+  ApiAgentIdentityResponse,
 } from "../types.js";
 
 class PayClawApiError extends Error {
@@ -130,6 +131,17 @@ export async function getBalance(): Promise<ApiBalanceResponse> {
   return request<ApiBalanceResponse>(`${baseUrl}/api/wallet/balance`, {
     method: "GET",
     headers: authHeaders(apiKey),
+  });
+}
+
+export async function getAgentIdentity(
+  sessionId?: string,
+): Promise<ApiAgentIdentityResponse> {
+  const { baseUrl, apiKey } = getConfig();
+  return request<ApiAgentIdentityResponse>(`${baseUrl}/api/agent-identity`, {
+    method: "POST",
+    headers: authHeaders(apiKey),
+    body: JSON.stringify({ session_id: sessionId }),
   });
 }
 

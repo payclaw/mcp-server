@@ -1,23 +1,31 @@
 # @payclaw/mcp-server
 
-The PayClaw MCP server lets AI agents make real purchases using disposable virtual cards — without ever touching your real credit card.
+## ⚠️ Before your agent shops anywhere
 
-> 🧪 **Developer Sandbox is open.** Try the full MCP flow with real Lithic sandbox cards and test deposits. [Get sandbox access →](https://payclaw.io)
+Merchants are drawing a line with AI agents.
+
+Walmart, Shopify, Instacart, and others are all setting policies now — agents must identify themselves and declare intent. Anonymous agent actions get accounts flagged or permanently banned. No warning. No appeal.
+
+PayClaw gives your agent two things:
+
+**Badge by PayClaw** — Declares your agent's identity and intent before every action. The account is protected. The action is traceable.
+
+**Spend by PayClaw** — A virtual Visa your agent retrieves itself at checkout. Card-per-task. Human-approved. Expires when the task is done.
+
+Badge = your agent's license plate. Spend = your agent's wallet.
+
+> 🧪 **Developer Sandbox is open.** Real infrastructure, test money. [Get sandbox access →](https://payclaw.io)
 
 [![npm version](https://img.shields.io/npm/v/@payclaw/mcp-server.svg)](https://www.npmjs.com/package/@payclaw/mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 <p align="center">
-  <img src="docs/demo.gif" alt="PayClaw Demo — Claude buying cold brew on Amazon" width="640" />
+  <img src="docs/demo.gif" alt="PayClaw Demo — Agent shopping with declared identity and virtual card" width="640" />
   <br />
-  <em>Claude searches Amazon, navigates Whole Foods sign-in walls, picks Starbucks Cold Brew, gets a PayClaw card, and is ready to checkout — in one prompt.</em>
+  <em>Agent declares identity, gets a PayClaw card, and completes checkout — in one prompt.</em>
 </p>
 
 ---
-
-## What is PayClaw?
-
-PayClaw issues virtual cards for AI agents with spend limits, merchant restrictions, and intent-based authorization. When your agent needs to buy something, it declares what it wants, PayClaw checks the rules, and issues a scoped card. Your real card is never involved.
 
 ## Quick Start
 
@@ -26,13 +34,7 @@ PayClaw issues virtual cards for AI agents with spend limits, merchant restricti
 Sign up for a free sandbox account at [payclaw.io](https://payclaw.io).
 Fund your sandbox with test card `4242 4242 4242 4242` and generate an API key from your dashboard.
 
-### 2. Install
-
-```bash
-npm install -g @payclaw/mcp-server
-```
-
-### 3. Configure
+### 2. Configure
 
 Add PayClaw to your MCP client config.
 
@@ -45,7 +47,7 @@ Add PayClaw to your MCP client config.
       "command": "npx",
       "args": ["@payclaw/mcp-server"],
       "env": {
-        "PAYCLAW_API_KEY": "pk_live_your_key_here",
+        "PAYCLAW_API_KEY": "pk_test_your_key_here",
         "PAYCLAW_API_URL": "https://payclaw.io"
       }
     }
@@ -62,7 +64,7 @@ Add PayClaw to your MCP client config.
       "command": "npx",
       "args": ["@payclaw/mcp-server"],
       "env": {
-        "PAYCLAW_API_KEY": "pk_live_your_key_here",
+        "PAYCLAW_API_KEY": "pk_test_your_key_here",
         "PAYCLAW_API_URL": "https://payclaw.io"
       }
     }
@@ -73,76 +75,60 @@ Add PayClaw to your MCP client config.
 **OpenClaw** (via ClawHub):
 
 ```bash
-clawhub install payclaw
+clawhub install payclaw-io
 ```
 
-### 4. Use it
+### 3. Use it
 
-Tell your agent to buy something. That's it.
+Tell your agent to buy something. It declares identity, gets a card, and checks out.
 
-> "Buy me two large pepperoni pizzas from Domino's, keep it under $30."
-
-The agent will call `payclaw_getCard`, get a virtual card, complete checkout, and report back.
-
----
-
-## Sandbox Mode
-
-PayClaw's sandbox uses real infrastructure with test money:
-
-- **Real Lithic-issued virtual cards** (sandbox environment)
-- **Real Stripe payment flow** (test mode)
-- **Real MCP calls** (identical to production)
-
-When production opens, update one env var. Nothing else in your code changes.
-
-### Test without an account
-
-If `PAYCLAW_API_URL` is not set, the MCP server runs in offline mock mode with a $500 starting balance and a fake card. Useful for testing MCP integration before signing up.
-
-### Test with a sandbox account
-
-Sign up at [payclaw.io](https://payclaw.io), fund with test card `4242 4242 4242 4242`, and set:
-
-```bash
-PAYCLAW_API_KEY=pk_test_your_key
-PAYCLAW_API_URL=https://payclaw.io
-```
-
-Your agent will get real Lithic sandbox cards back from `getCard()`.
-
----
-
-## Environment Variables
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `PAYCLAW_API_KEY` | ✅ | Your API key from the PayClaw dashboard (`pk_live_...` or `pk_test_...`) |
-| `PAYCLAW_API_URL` | optional | PayClaw API URL (`https://payclaw.io` for production). If omitted, runs in offline mock mode. |
-
-> **Offline/dev mode:** If `PAYCLAW_API_URL` is not set, the server runs with a local mock store ($500 starting balance, fake card). Useful for testing MCP integration without a PayClaw account.
+> "Buy me coffee beans from Trade Coffee, budget $20"
 
 ---
 
 ## Tools
 
-### `payclaw_getCard`
+### `payclaw_getAgentIdentity` (Badge)
 
-Request a virtual card for making a purchase. The agent must declare what it intends to buy.
+Declare your agent's identity before browsing, searching, or buying. Call this first.
+
+No card issued. No money moves. Just a cryptographic token proving your agent acts for a verified, MFA-authenticated human.
+
+**Parameters:** None
+
+**Returns:**
+
+```json
+{
+  "product_name": "PayClaw Badge",
+  "status": "active",
+  "agent_disclosure": "This session is operated by an AI agent under PayClaw Agentic Intent...",
+  "verification_token": "pc_v1_...",
+  "trust_url": "https://payclaw.io/trust",
+  "contact": "agent_identity@payclaw.io",
+  "principal_verified": true,
+  "mfa_confirmed": true
+}
+```
+
+### `payclaw_getCard` (Spend)
+
+Declare purchase intent → get a virtual Visa card. Human approves via tool-call prompt.
 
 **Parameters:**
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `merchant` | string | ✅ | Merchant website or name (e.g., `"dominos.com"`) |
-| `estimated_amount` | number | ✅ | Estimated purchase amount in USD (e.g., `25.00`) |
-| `description` | string | ✅ | What you're buying (e.g., `"2 large pepperoni pizzas"`) |
+| `merchant` | string | ✅ | Merchant website or name (e.g., `"tradecoffee.com"`) |
+| `estimated_amount` | number | ✅ | Estimated purchase amount in USD (max $500) |
+| `description` | string | ✅ | What you're buying |
 
 **Returns:**
 
 ```json
 {
   "status": "approved",
+  "intent_id": "int_abc123",
   "card": {
     "number": "4xxx xxxx xxxx 1234",
     "exp_month": 12,
@@ -150,7 +136,12 @@ Request a virtual card for making a purchase. The agent must declare what it int
     "cvv": "123",
     "billing_name": "PAYCLAW USER"
   },
-  "intent_id": "int_abc123",
+  "identity": {
+    "agent_disclosure": "This purchase is authorized under PayClaw Agentic Intent...",
+    "verification_token": "pc_v1_...",
+    "trust_url": "https://payclaw.io/trust",
+    "contact": "agent_identity@payclaw.io"
+  },
   "remaining_balance": 475.00,
   "instructions": "Use this card to complete the purchase. After the transaction, call payclaw_reportPurchase with the intent_id and actual amount charged."
 }
@@ -158,13 +149,13 @@ Request a virtual card for making a purchase. The agent must declare what it int
 
 **Possible statuses:**
 - `approved` — card issued, proceed with purchase
-- `pending_approval` — user confirmation required (Always Ask mode); prompt the user to approve the spend in their PayClaw dashboard, then retry
-- `denied` — policy check failed (insufficient balance, merchant not whitelisted, etc.)
-- `error` — configuration issue (missing API key, API unreachable, etc.)
+- `pending_approval` — user confirmation required; prompt the user to approve in their PayClaw dashboard
+- `denied` — policy check failed (insufficient balance, etc.)
+- `error` — configuration issue
 
 ### `payclaw_reportPurchase`
 
-Report the outcome after completing a purchase. This creates the audit trail.
+Report the outcome after completing a purchase. Creates the audit trail.
 
 **Parameters:**
 
@@ -177,85 +168,106 @@ Report the outcome after completing a purchase. This creates the audit trail.
 | `items` | string | | What was purchased |
 | `order_confirmation` | string | | Order/confirmation number |
 
-**Returns:**
-
-```json
-{
-  "status": "recorded",
-  "intent_match": true,
-  "transaction_id": "txn_abc123",
-  "remaining_balance": 451.53,
-  "actual_amount": 23.47
-}
-```
-
 ---
 
 ## How It Works
 
 ```
-You: "Buy me a pizza from Domino's, about $25"
+You: "Buy me coffee beans from Trade Coffee, budget $20"
+         │
+         ▼
+Agent calls payclaw_getAgentIdentity()
+  → Verified identity token issued
+  → Agent is declared to merchants
          │
          ▼
 Agent calls payclaw_getCard({
-  merchant: "dominos.com",
-  estimated_amount: 25.00,
-  description: "Pizza order"
+  merchant: "tradecoffee.com",
+  estimated_amount: 20.00,
+  description: "Coffee beans"
 })
          │
          ▼
 PayClaw checks:
   ✅ Balance sufficient?
-  ✅ Merchant on whitelist?
   ✅ Within spend limits?
+  → Virtual card issued with identity block
          │
          ▼
-Virtual card issued → Agent completes checkout
-         │
-         ▼
-Agent calls payclaw_reportPurchase({
-  intent_id: "int_abc123",
-  success: true,
-  actual_amount: 23.47,
-  items: "2 Large Pepperoni Pizzas"
-})
-         │
-         ▼
-PayClaw auto-audits: declared vs actual ✅ match
-Transaction logged to your dashboard
+Agent completes checkout → calls payclaw_reportPurchase()
+  → PayClaw auto-audits: declared vs actual ✅ match
+  → Transaction logged to dashboard
 ```
+
+---
+
+## Sandbox Mode
+
+PayClaw's sandbox uses real infrastructure with test money:
+
+- **Real Lithic-issued virtual cards** (sandbox environment)
+- **Real Stripe payment flow** (test mode)
+- **Real MCP calls** (identical to production)
+
+When production opens, update one env var. Nothing else changes.
+
+### Test without an account
+
+If `PAYCLAW_API_URL` is not set, the MCP server runs in offline mock mode with a $500 starting balance and a mock card.
+
+### Test with a sandbox account
+
+Sign up at [payclaw.io](https://payclaw.io), fund with test card `4242 4242 4242 4242`, and set both env vars.
+
+---
+
+## Just Need Identity?
+
+If your agent browses but doesn't buy, install Badge standalone:
+
+```bash
+npm install -g @payclaw/badge
+```
+
+Or via ClawHub:
+```bash
+clawhub install payclaw-badge
+```
+
+Badge is included in `@payclaw/mcp-server` automatically — no extra setup if you're already using Spend.
+
+---
 
 ## Security
 
-PayClaw is built on a **zero-trust architecture** for AI agent payments.
-
 ### Trust by Design
 
-- **Zero standing access.** Your agent has no persistent financial state — it cannot query balance, view card numbers, or access transaction history without an approved intent.
-- **Human-in-the-loop.** Every purchase requires explicit user approval via MFA-protected dashboard. API keys cannot approve intents — only the human can.
-- **Ephemeral credentials.** Card-per-transaction by design. Each approved purchase gets a fresh virtual card. Your agent never accumulates card credentials between tasks.
-- **Intent reconciliation.** Every transaction is auto-compared against the declared intent. Estimated vs. actual spend mismatches are flagged automatically.
+- **Identity-first.** Agent declares who it is before any action
+- **Intent-based.** Agent declares what it's buying before getting a card
+- **Human-in-the-loop.** Every purchase requires explicit user approval via tool-call prompt
+- **Ephemeral credentials.** Card-per-transaction. No persistent card state between tasks.
+- **Intent reconciliation.** Every transaction auto-compared against declared intent.
 
 ### Infrastructure
 
-- **Card data never stored.** Card credentials exist only in the transient API response — never persisted on PayClaw servers.
-- **API keys hashed, not stored.** SHA-256 with timing-safe comparison. Same approach as Stripe.
-- **$500 balance ceiling.** Maximum exposure per account is hard-capped.
-- **15-minute intent expiry.** Unused approvals expire automatically. No indefinite card holding.
+- **Card data never stored.** Credentials exist only in the transient API response.
+- **API keys hashed, not stored.** SHA-256 with timing-safe comparison.
+- **$500 balance ceiling.** Hard-capped maximum exposure per account.
+- **15-minute intent expiry.** Unused approvals expire automatically.
 - **HTTPS enforced.** The MCP server rejects non-HTTPS API URLs.
 - **Input bounds.** All inputs validated with maximum lengths and amounts at the MCP layer.
-- **30-second timeout.** API calls timeout automatically — your agent won't hang indefinitely.
+- **30-second timeout.** API calls timeout automatically.
 - **PCI-compliant infrastructure.** Stripe Elements for funding (SAQ-A), Lithic for card issuing (PCI Level 1).
 
 ### Continuous Security
 
-- Daily automated code scanning and dependency auditing
 - AI code review on every PR (CodeRabbit)
 - Secret scanning on every commit (gitleaks)
-- Penetration testing simulation every other day
+- Daily automated dependency auditing
 
 For security issues: **security@payclaw.io**
 
+---
 
 ## Compatibility
 
@@ -269,24 +281,18 @@ Works with any MCP-compatible client:
 ## Development
 
 ```bash
-# Clone the repo
 git clone https://github.com/payclaw/mcp-server.git
 cd mcp-server
 npm install
 
-# Run with mock store (no PayClaw account needed)
+# Mock mode (no account needed)
 PAYCLAW_API_KEY=pk_test_anything npm run dev
 
-# Run against real API
-PAYCLAW_API_KEY=pk_live_your_key PAYCLAW_API_URL=https://payclaw.io npm run dev
+# Against real API
+PAYCLAW_API_KEY=pk_test_your_key PAYCLAW_API_URL=https://payclaw.io npm run dev
 
-# Build
 npm run build
 ```
-
-## Contributing
-
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## License
 
@@ -294,4 +300,4 @@ MIT — see [LICENSE](LICENSE) for details.
 
 ---
 
-**PayClaw** — Virtual cards for AI agents. [payclaw.io](https://payclaw.io)
+**PayClaw** — Declare first. Then act. [payclaw.io](https://payclaw.io)

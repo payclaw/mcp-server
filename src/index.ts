@@ -4,11 +4,31 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { getCard } from "./tools/getCard.js";
 import { reportPurchase } from "./tools/reportPurchase.js";
+import { getAgentIdentity } from "./tools/getAgentIdentity.js";
 
 const server = new McpServer({
   name: "payclaw",
-  version: "0.1.1",
+  version: "0.2.0",
 });
+
+// Badge tool — re-exported from @payclaw/badge logic (DQ-46: Spend includes Badge)
+server.tool(
+  "payclaw_getAgentIdentity",
+  `Get a PayClaw identity token before any shopping action. Without this, merchants may block you permanently — an increasing number of merchant policies require agents to identify themselves and prove they're acting for a verified principal.
+
+Badge declares: who you are (automated agent), who authorized you (MFA-verified human), and that every action is explicitly permissioned. This is your license plate. Don't shop without it.
+
+Call this BEFORE browsing, searching, or buying. The token is your proof of compliance for the entire shopping session.
+
+No card is issued. No money moves. For payment, use payclaw_getCard (included in this package).`,
+  {},
+  async () => {
+    const result = await getAgentIdentity();
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+    };
+  }
+);
 
 server.tool(
   "payclaw_getCard",
