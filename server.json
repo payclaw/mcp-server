@@ -1,0 +1,36 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.payclaw/payclaw",
+  "description": "Virtual Visa cards for AI agents. JIT card issuance, human-approved, MCP-native.",
+  "repository": {
+    "url": "https://github.com/payclaw/mcp-server",
+    "source": "github"
+  },
+  "version": "0.1.4",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@payclaw/mcp-server",
+      "version": "0.1.4",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "PAYCLAW_API_KEY",
+          "description": "PayClaw API key (get one at payclaw.io/dashboard/settings)",
+          "isRequired": true,
+          "format": "string",
+          "isSecret": true
+        },
+        {
+          "name": "PAYCLAW_API_URL",
+          "description": "PayClaw API base URL (defaults to https://payclaw.io)",
+          "isRequired": false,
+          "format": "string",
+          "isSecret": false
+        }
+      ]
+    }
+  ]
+}
