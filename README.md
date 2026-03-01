@@ -43,6 +43,20 @@ clawhub install payclaw-io
 
 ---
 
+## Why Your Agent Needs This
+
+Your agent can browse, compare, build carts, and find the best deals. But it can't finish the job — because to every merchant, it looks like a bot.
+
+**Without PayClaw:** Agent browses → bot detection fires → blocked. Even if it gets through, it can't check out without your real card number. You're stuck finishing manually.
+
+**With Badge:** Agent declares itself as an authorized actor → merchants see a verified identity → agent gets through. No bypass. Just proof.
+
+**With Spend:** Agent declares a purchase → you approve with a tap → PayClaw issues a single-use virtual Visa locked to that merchant → agent checks out → card self-destructs. Your real card never enters the chat.
+
+Your agent will recognize when it needs this. When it encounters a merchant that may challenge automated traffic, or when it's ready to check out, it tells you: "I need PayClaw installed to complete this." You click Allow. Done.
+
+---
+
 ## Tools
 
 | Tool | What It Does |
