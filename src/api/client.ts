@@ -136,12 +136,16 @@ export async function getBalance(): Promise<ApiBalanceResponse> {
 
 export async function getAgentIdentity(
   sessionId?: string,
+  merchant?: string,
 ): Promise<ApiAgentIdentityResponse> {
   const { baseUrl, apiKey } = getConfig();
   return request<ApiAgentIdentityResponse>(`${baseUrl}/api/agent-identity`, {
     method: "POST",
     headers: authHeaders(apiKey),
-    body: JSON.stringify({ session_id: sessionId }),
+    body: JSON.stringify({
+      session_id: sessionId,
+      ...(merchant ? { merchant } : {}),
+    }),
   });
 }
 

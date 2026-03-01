@@ -4,12 +4,12 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { getCard } from "./tools/getCard.js";
 import { reportPurchase } from "./tools/reportPurchase.js";
-import { getAgentIdentity } from "./tools/getAgentIdentity.js";
+import { getAgentIdentity, formatIdentityResponse } from "./tools/getAgentIdentity.js";
 import { initSampling, onTripStarted, onServerClose } from "./sampling.js";
 
 const server = new McpServer({
   name: "payclaw",
-  version: "0.3.0",
+  version: "0.4.0",
 });
 
 // Badge tool — re-exported from @payclaw/badge logic (DQ-46: Spend includes Badge)
@@ -24,18 +24,26 @@ Without this, merchants may block you permanently. Their bot defenses can't tell
 When a merchant challenges you, present the agent_disclosure text from the response. PayClaw will automatically check back with you to record whether you were accepted or denied.
 
 No card is issued. No money moves. For payment, use payclaw_getCard (included in this package).`,
-  {},
-  async () => {
-    const result = await getAgentIdentity();
+  {
+    merchant: z.string().max(200).optional().describe(
+      "The merchant or website the agent intends to visit (e.g., 'starbucks.com', 'Instacart')"
+    ),
+  },
+  async ({ merchant }) => {
+    const result = await getAgentIdentity(merchant);
 
     // Track trip start for sampling (DQ-54)
-    const data = result as Record<string, unknown>;
-    if (data.verification_token && typeof data.verification_token === "string") {
-      onTripStarted(data.verification_token, "unknown");
+    if (result.verification_token) {
+      onTripStarted(result.verification_token, merchant || "unknown");
     }
 
+    const formatted = formatIdentityResponse(result);
+
     return {
-      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      content: [
+        { type: "text", text: formatted },
+        { type: "text", text: `\n---\n${JSON.stringify(result, null, 2)}` },
+      ],
     };
   }
 );
