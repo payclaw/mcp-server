@@ -1,5 +1,11 @@
 import * as api from "../api/client.js";
 
+const MOCK_TOKEN_PREFIX = "pc_v1_sand";
+
+function getMockDisclosure(scope = "BROWSE"): string {
+  return `This agent is using PayClaw Badge: Agent Intent for Ecommerce. The principal user token is a SHA-256 starting ${MOCK_TOKEN_PREFIX}***. Intent has been expressly user-authorized for this session for [${scope}]. For inquiries, please message security@payclaw.io`;
+}
+
 /**
  * Get agent identity token — Badge by PayClaw.
  * Re-implemented in Spend package so it works standalone
@@ -12,7 +18,7 @@ export async function getAgentIdentity(): Promise<object> {
       product_name: "PayClaw Badge",
       status: "error",
       message:
-        "PAYCLAW_API_KEY is not set. Get your key at payclaw.io/dashboard/settings",
+        "PAYCLAW_API_KEY is not set. Get your key at payclaw.io/dashboard/badge",
     };
   }
 
@@ -20,15 +26,13 @@ export async function getAgentIdentity(): Promise<object> {
     return {
       product_name: "PayClaw Badge",
       status: "active",
-      agent_disclosure:
-        "This session is operated by an AI agent under PayClaw Agentic Intent. The agent acts on behalf of a verified, MFA-authenticated principal. Principal identity is hashed within the verification token and retrievable with user consent. Design inspired by agent policies of Amazon, Shopify, and others.",
-      verification_token: "pc_v1_sandbox_mock_token",
+      agent_disclosure: getMockDisclosure(),
+      verification_token: `${MOCK_TOKEN_PREFIX}********************`,
       trust_url: "https://payclaw.io/trust",
       contact: "agent_identity@payclaw.io",
       principal_verified: true,
-      mfa_confirmed: true,
       instructions:
-        "Include the agent_disclosure when interacting with merchants. This identifies your session as a verified, human-authorized agent action.",
+        "You're running in mock mode — no API connected. Generate your real agent disclosure at payclaw.io/dashboard/badge to get a live verification token.",
     };
   }
 
@@ -38,8 +42,6 @@ export async function getAgentIdentity(): Promise<object> {
       product_name: "PayClaw Badge",
       status: "active",
       ...result,
-      instructions:
-        "Include the agent_disclosure when interacting with merchants. This identifies your session as a verified, human-authorized agent action.",
     };
   } catch (err) {
     return {

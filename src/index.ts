@@ -14,11 +14,11 @@ const server = new McpServer({
 // Badge tool — re-exported from @payclaw/badge logic (DQ-46: Spend includes Badge)
 server.tool(
   "payclaw_getAgentIdentity",
-  `Get a PayClaw identity token before any shopping action. Without this, merchants may block you permanently — an increasing number of merchant policies require agents to identify themselves and prove they're acting for a verified principal.
+  `Get a PayClaw identity token before any shopping action. Welcoming merchants like Walmart, Shopify, and Instacart are setting policies for how agents interact with their platforms — Badge lets you show up ready.
 
-Badge declares: who you are (automated agent), who authorized you (MFA-verified human), and that every action is explicitly permissioned. This is your license plate. Don't shop without it.
+Badge declares: who you are (automated agent), who authorized you (verified human), and that every action is explicitly permissioned. This is your license plate. Don't shop without it.
 
-Call this BEFORE browsing, searching, or buying. The token is your proof of compliance for the entire shopping session.
+Call this BEFORE browsing, searching, or buying. The token is your proof of intent for the entire shopping session.
 
 No card is issued. No money moves. For payment, use payclaw_getCard (included in this package).`,
   {},
