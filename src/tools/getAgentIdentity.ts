@@ -82,7 +82,7 @@ export function formatIdentityResponse(r: IdentityResult): string {
   const lines = [
     `✓ DECLARED — Your agent is now an authorized actor`,
     ``,
-    `  Token:       ${r.verification_token ? r.verification_token.slice(0, 16) + '...' : 'N/A'}`,
+    `  Token:       ${r.verification_token ? r.verification_token.slice(0, 10) + '**' : 'N/A'}`,
     `  Principal:   ${r.principal_verified ? 'Verified ✓' : 'Unverified'}`,
     `  Scope:       [BROWSE]`,
   ];
