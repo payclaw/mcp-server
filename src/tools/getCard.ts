@@ -7,15 +7,33 @@ export interface GetCardInput {
   description: string;
 }
 
+export interface CardResult {
+  product_name: string;
+  status: string;
+  intent_id?: string;
+  card?: {
+    number: string;
+    exp_month: string | number;
+    exp_year: string | number;
+    cvv: string;
+    billing_name?: string;
+    last_four?: string;
+  };
+  merchant?: string;
+  amount?: number;
+  identity?: unknown;
+  badge_warning?: string;
+  remaining_balance?: number;
+  instructions?: string;
+  message?: string;
+  reason?: string;
+  merchant_url?: string;
+  estimated_amount?: number;
+  approve_endpoint?: string;
+}
+
 /**
  * Minimal merchant normalization — add https:// if no protocol present.
- *
- * The merchant field is human-readable intent text, not a validated URL.
- * The user reads and approves it before any card is issued. Lithic captures
- * the actual merchant at authorization time. Heavy URL normalization adds
- * complexity with no security or UX benefit.
- *
- * See DQ-35.
  */
 function normalizeMerchantUrl(merchant: string): string {
   const trimmed = merchant.trim().replace(/^\/\//, "");
@@ -25,14 +43,83 @@ function normalizeMerchantUrl(merchant: string): string {
   return `https://${trimmed}`;
 }
 
-async function getCardViaApi(input: GetCardInput): Promise<object> {
+/**
+ * Format card result as human-readable text for CLI/agent display.
+ */
+export function formatCardResponse(r: CardResult, merchant?: string, amount?: number): string {
+  if (r.status === "error") {
+    return `✗ CARD ERROR\n\n  ${r.message}`;
+  }
+
+  if (r.status === "denied") {
+    return [
+      `✗ CARD DENIED`,
+      ``,
+      `  Reason:     ${r.reason || r.message || 'Denied by policy'}`,
+      `  Balance:    $${r.remaining_balance?.toFixed(2) ?? 'N/A'}`,
+      ``,
+      `  Fund your PayClaw balance at payclaw.io/dashboard to try again.`,
+    ].join('\n');
+  }
+
+  if (r.status === "pending_approval") {
+    return [
+      `⏳ APPROVAL REQUIRED`,
+      ``,
+      `  Merchant:   ${merchant || r.merchant_url || 'Unknown'}`,
+      `  Amount:     $${(amount || r.estimated_amount || 0).toFixed(2)}`,
+      ``,
+      `  Your user needs to approve this purchase before a card is issued.`,
+      `  Ask them to approve $${(amount || r.estimated_amount || 0).toFixed(2)} at ${merchant || r.merchant_url || 'the merchant'}.`,
+    ].join('\n');
+  }
+
+  if (r.status === "approved" && r.card) {
+    const lastFour = r.card.last_four || r.card.number?.slice(-4) || '****';
+    const lines = [
+      `✓ VIRTUAL VISA ISSUED`,
+      ``,
+      `  Card:       •••• ${lastFour}`,
+    ];
+
+    if (merchant) {
+      lines.push(`  Merchant:   ${merchant}`);
+    }
+    if (amount) {
+      lines.push(`  Amount:     $${amount.toFixed(2)}`);
+    }
+
+    lines.push(
+      `  Expires:    15 minutes`,
+      `  Status:     ACTIVE`,
+    );
+
+    if (r.remaining_balance !== undefined) {
+      lines.push(`  Balance:    $${r.remaining_balance.toFixed(2)} remaining`);
+    }
+
+    lines.push(
+      ``,
+      `  ⚠️  Single-use. Card self-destructs after this purchase.`,
+      `  Call payclaw_reportPurchase when done.`,
+    );
+
+    if (r.badge_warning) {
+      lines.push(``, `  ⚠️  ${r.badge_warning}`);
+    }
+
+    return lines.join('\n');
+  }
+
+  // Fallback
+  return JSON.stringify(r, null, 2);
+}
+
+async function getCardViaApi(input: GetCardInput): Promise<CardResult> {
   const { merchant, estimated_amount, description } = input;
   const merchantUrl = normalizeMerchantUrl(merchant);
   const estimatedCents = Math.round(estimated_amount * 100);
 
-  // Always create the intent — let the server-side policy engine decide.
-  // This ensures denied intents are recorded in the database and visible
-  // in the user's dashboard activity feed.
   const intent = await api.createIntent(merchantUrl, estimatedCents, description);
 
   if (intent.status !== "approved" && intent.status !== "pending_approval") {
@@ -41,13 +128,12 @@ async function getCardViaApi(input: GetCardInput): Promise<object> {
       product_name: "PayClaw",
       status: "denied",
       intent_id: intent.id,
-      reason: typeof intent.policy_result === "object" && intent.policy_result ? (intent.policy_result as Record<string, unknown>).reason ?? "denied" : "denied",
+      reason: typeof intent.policy_result === "object" && intent.policy_result ? (intent.policy_result as Record<string, unknown>).reason as string ?? "denied" : "denied",
       message: `PayClaw denied: ${typeof intent.policy_result === "object" && intent.policy_result ? (intent.policy_result as Record<string, unknown>).reason ?? intent.status : intent.status}`,
       remaining_balance: balance.available_cents / 100,
     };
   }
 
-  // V1: Intent comes back as pending_approval — agent needs user to approve
   if (intent.status === "pending_approval") {
     const balance = await api.getBalance();
     return {
@@ -69,12 +155,15 @@ async function getCardViaApi(input: GetCardInput): Promise<object> {
     product_name: "PayClaw",
     status: "approved",
     intent_id: intent.id,
+    merchant: merchant,
+    amount: estimated_amount,
     card: {
       number: card.card_number,
       exp_month: card.exp_month,
       exp_year: card.exp_year,
       cvv: card.cvv,
       billing_name: card.cardholder_name,
+      last_four: card.card_number?.slice(-4),
     },
     identity: card.identity ?? undefined,
     badge_warning: card.badge_warning ??
@@ -85,7 +174,7 @@ async function getCardViaApi(input: GetCardInput): Promise<object> {
   };
 }
 
-function getCardViaMock(input: GetCardInput): object {
+function getCardViaMock(input: GetCardInput): CardResult {
   const { merchant, estimated_amount, description } = input;
   const balance = getBalance();
 
@@ -105,7 +194,12 @@ function getCardViaMock(input: GetCardInput): object {
     product_name: "PayClaw",
     status: "approved",
     intent_id: intent.intent_id,
-    card: MOCK_CARD,
+    merchant: merchant,
+    amount: estimated_amount,
+    card: {
+      ...MOCK_CARD,
+      last_four: MOCK_CARD.number?.slice(-4),
+    },
     badge_warning:
       "Consider calling payclaw_getAgentIdentity before shopping. Merchants are increasingly blocking unidentified agents.",
     remaining_balance: balance,
@@ -114,7 +208,7 @@ function getCardViaMock(input: GetCardInput): object {
   };
 }
 
-export async function getCard(input: GetCardInput): Promise<object> {
+export async function getCard(input: GetCardInput): Promise<CardResult> {
   if (!process.env.PAYCLAW_API_KEY) {
     return {
       product_name: "PayClaw",

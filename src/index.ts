@@ -2,7 +2,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { getCard } from "./tools/getCard.js";
+import { getCard, formatCardResponse } from "./tools/getCard.js";
 import { reportPurchase } from "./tools/reportPurchase.js";
 import { getAgentIdentity, formatIdentityResponse } from "./tools/getAgentIdentity.js";
 import { initSampling, onTripStarted, onServerClose } from "./sampling.js";
@@ -62,8 +62,12 @@ Call payclaw_reportPurchase after the transaction.`,
   },
   async ({ merchant, estimated_amount, description }) => {
     const result = await getCard({ merchant, estimated_amount, description });
+    const formatted = formatCardResponse(result, merchant, estimated_amount);
     return {
-      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      content: [
+        { type: "text", text: formatted },
+        { type: "text", text: `\n---\n${JSON.stringify(result, null, 2)}` },
+      ],
     };
   }
 );

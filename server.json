@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.payclaw/spend",
-  "description": "Agent identity + virtual Visa cards. Declare, pay, audit — on existing Visa rails.",
+  "description": "Agents are not bots. PayClaw proves it — then lets them pay. Badge + Spend on existing Visa rails.",
   "repository": {
     "url": "https://github.com/payclaw/mcp-server",
     "source": "github"
   },
-  "version": "0.3.1",
+  "version": "0.4.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@payclaw/mcp-server",
-      "version": "0.3.1",
+      "version": "0.4.0",
       "transport": {
         "type": "stdio"
       },
