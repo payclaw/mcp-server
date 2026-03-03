@@ -26,15 +26,14 @@ Add to your MCP client config (Claude Desktop, Cursor, or any MCP client):
       "command": "npx",
       "args": ["-y", "@payclaw/mcp-server"],
       "env": {
-        "PAYCLAW_API_KEY": "pk_your_key_here",
-        "PAYCLAW_API_URL": "https://payclaw.io"
+        "PAYCLAW_API_URL": "https://api.payclaw.io"
       }
     }
   }
 }
 ```
 
-Get your API key at [payclaw.io](https://payclaw.io). Five-minute setup.
+No API key required. On first use, your agent will show a code and URL — approve on your phone, and your Consent Key is stored. Optional: set `PAYCLAW_API_KEY` for existing accounts (backward compatible).
 
 Or install via ClawHub:
 ```bash
@@ -42,6 +41,15 @@ clawhub install payclaw-io
 ```
 
 ---
+
+## UCP Identity Linking
+
+PayClaw Badge is a [UCP (Universal Commerce Protocol)](https://ucp.dev) Credential Provider. Merchants who declare the PayClaw identity extension signal to every UCP-compliant agent that authorized agents are preferred at their store.
+
+When your agent encounters a UCP merchant with PayClaw installed, it presents a cryptographic badge automatically — no extra steps.
+
+- Extension spec + schema: [github.com/payclaw/ucp-agent-badge](https://github.com/payclaw/ucp-agent-badge)
+- Merchant documentation: [payclaw.io/merchants](https://payclaw.io/merchants)
 
 ## Why Your Agent Needs This
 
@@ -126,8 +134,7 @@ If you only need identity (no payment), use the lighter package:
       "command": "npx",
       "args": ["-y", "@payclaw/badge"],
       "env": {
-        "PAYCLAW_API_KEY": "pk_your_key_here",
-        "PAYCLAW_API_URL": "https://payclaw.io"
+        "PAYCLAW_API_URL": "https://api.payclaw.io"
       }
     }
   }
@@ -150,8 +157,10 @@ PayClaw is KYA infrastructure. Every declaration creates a verified record of ag
 - **Website:** [payclaw.io](https://payclaw.io)
 - **npm:** [@payclaw/mcp-server](https://www.npmjs.com/package/@payclaw/mcp-server)
 - **Badge npm:** [@payclaw/badge](https://www.npmjs.com/package/@payclaw/badge)
+- **UCP Extension:** [github.com/payclaw/ucp-agent-badge](https://github.com/payclaw/ucp-agent-badge)
 - **ClawHub:** [payclaw-io](https://clawhub.com/skills/payclaw-io)
 - **Trust:** [payclaw.io/trust](https://payclaw.io/trust)
+- **Merchants:** [payclaw.io/merchants](https://payclaw.io/merchants)
 - **Contact:** agent_identity@payclaw.io
 - **Security:** security@payclaw.io
 

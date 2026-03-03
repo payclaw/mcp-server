@@ -9,7 +9,7 @@ import { initSampling, onTripStarted, onServerClose } from "./sampling.js";
 
 const server = new McpServer({
   name: "payclaw",
-  version: "0.4.0",
+  version: "0.5.0",
 });
 
 // Badge tool — re-exported from @payclaw/badge logic (DQ-46: Spend includes Badge)
@@ -39,10 +39,13 @@ No card is issued. No money moves. For payment, use payclaw_getCard (included in
 
     const formatted = formatIdentityResponse(result);
 
+    // Omit internal fields from JSON for activation_required
+    const { activation_required: _, ...publicResult } = result;
+
     return {
       content: [
         { type: "text", text: formatted },
-        { type: "text", text: `\n---\n${JSON.stringify(result, null, 2)}` },
+        { type: "text", text: `\n---\n${JSON.stringify(publicResult, null, 2)}` },
       ],
     };
   }

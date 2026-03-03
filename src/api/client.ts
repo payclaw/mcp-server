@@ -152,3 +152,33 @@ export async function getAgentIdentity(
 export function isApiMode(): boolean {
   return !!process.env.PAYCLAW_API_URL;
 }
+
+/** Base URL for API calls. Defaults to https://api.payclaw.io. */
+export function getBaseUrl(): string {
+  const url = process.env.PAYCLAW_API_URL;
+  if (url && url.trim().length > 0) {
+    return url.trim().replace(/\/+$/, "");
+  }
+  return "https://api.payclaw.io";
+}
+
+/**
+ * Call agent-identity with a Bearer token (API key or OAuth access token).
+ * Used when consent key comes from device flow (OAuth token) instead of PAYCLAW_API_KEY.
+ */
+export async function getAgentIdentityWithToken(
+  baseUrl: string,
+  token: string,
+  merchant?: string
+): Promise<ApiAgentIdentityResponse> {
+  return request<ApiAgentIdentityResponse>(`${baseUrl}/api/agent-identity`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      ...(merchant ? { merchant } : {}),
+    }),
+  });
+}

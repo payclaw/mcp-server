@@ -1,31 +1,31 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.payclaw/spend",
-  "description": "Agents are not bots. PayClaw proves it — then lets them pay. Badge + Spend on existing Visa rails.",
+  "description": "Agents are not bots. PayClaw proves it — then lets them pay. UCP Credential Provider: Badge + Spend on Visa rails. No API key required — device auth flow built in.",
   "repository": {
     "url": "https://github.com/payclaw/mcp-server",
     "source": "github"
   },
-  "version": "0.4.0",
+  "version": "0.5.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@payclaw/mcp-server",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "transport": {
         "type": "stdio"
       },
       "environmentVariables": [
         {
           "name": "PAYCLAW_API_KEY",
-          "description": "Your PayClaw API key (get one at payclaw.io)",
-          "isRequired": true,
+          "description": "Optional. Your PayClaw API key for existing accounts. If omitted, device authorization flow triggers automatically on first use.",
+          "isRequired": false,
           "format": "string",
           "isSecret": true
         },
         {
           "name": "PAYCLAW_API_URL",
-          "description": "PayClaw API URL (default: https://payclaw.io)",
+          "description": "PayClaw API URL (default: https://api.payclaw.io)",
           "isRequired": false,
           "format": "string",
           "isSecret": false
