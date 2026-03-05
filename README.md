@@ -40,6 +40,15 @@ Or install via ClawHub:
 clawhub install payclaw-io
 ```
 
+### Node version
+
+PayClaw MCP requires **Node.js 20 or newer**. Node 18 is end-of-life and unsupported.
+
+If you see engine or compatibility errors:
+
+- Check: `node -v`
+- Install Node 20+: [nodejs.org](https://nodejs.org/) or `nvm install 20`
+
 ---
 
 ## UCP Identity Linking
@@ -66,6 +75,8 @@ Your agent will recognize when it needs this. When it encounters a merchant that
 ---
 
 ## Tools
+
+See [docs/tool-contract.md](docs/tool-contract.md) for the formal input/output contract.
 
 | Tool | What It Does |
 |------|-------------|
