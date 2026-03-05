@@ -1,14 +1,12 @@
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { parseResponse } from "./lib/parse-outcome.js";
+import { getStoredConsentKey } from "./lib/storage.js";
 
 const SAMPLING_DELAY_MS = 7000; // 7 seconds after identity_presented
 const SAMPLING_TIMEOUT_MS = 15000; // 15 seconds to respond
+const DEFAULT_API_URL = "https://api.payclaw.io";
 
-const FAILURE_SIGNALS = [
-  "yes", "blocked", "denied", "failed", "403", "error",
-  "rejected", "banned", "forbidden", "captcha", "stopped",
-];
-
-interface ActiveTrip {
+export interface ActiveTrip {
   token: string;
   merchant: string;
   startedAt: number;
@@ -37,7 +35,9 @@ export function initSampling(server: Server): void {
 
   if (!reaperStarted) {
     reaperStarted = true;
-    setInterval(() => reapStaleTrips(), REAPER_INTERVAL_MS);
+    if (process.env.VITEST !== "true") {
+      setInterval(() => reapStaleTrips(), REAPER_INTERVAL_MS);
+    }
   }
 }
 
@@ -156,24 +156,6 @@ async function sampleAgent(token: string, merchant: string): Promise<void> {
   }
 }
 
-function parseResponse(text: string): "accepted" | "denied" | "inconclusive" {
-  if (!text || text.trim().length === 0) return "inconclusive";
-
-  const lower = text.toLowerCase().trim();
-
-  // Check for denial signals
-  if (FAILURE_SIGNALS.some((s) => lower.includes(s))) {
-    // But "no" alone means "no, I was not denied" = accepted
-    if (lower === "no" || lower === "no." || lower === "no,") return "accepted";
-    return "denied";
-  }
-
-  // "no" variants = not denied = accepted
-  if (lower.startsWith("no")) return "accepted";
-
-  return "inconclusive";
-}
-
 function resolveTrip(token: string, outcome: string, detail: string): void {
   const trip = activeTrips.get(token);
   if (!trip) return;
@@ -198,16 +180,16 @@ async function reportOutcome(
   merchant: string,
   detail: string
 ): Promise<void> {
-  const apiUrl = process.env.PAYCLAW_API_URL || "https://payclaw.io";
-  const apiKey = process.env.PAYCLAW_API_KEY;
-  if (!apiKey) return;
+  const apiUrl = process.env.PAYCLAW_API_URL || DEFAULT_API_URL;
+  const key = getStoredConsentKey();
+  if (!key) return;
 
   const eventType = outcome === "denied" ? "trip_failure" : "trip_success";
 
   const res = await fetch(`${apiUrl}/api/badge/report`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${key}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -249,4 +231,21 @@ export function onServerClose(): void {
     }
   }
   activeTrips.clear();
+}
+
+/** Test-only: reset state between tests. No-op when VITEST not set. */
+export function resetSamplingState(): void {
+  if (process.env.VITEST !== "true") return;
+  for (const trip of activeTrips.values()) {
+    if (trip.samplingTimer) clearTimeout(trip.samplingTimer);
+  }
+  activeTrips.clear();
+  serverRef = null;
+  samplingAvailable = true;
+}
+
+/** Test-only: get trip for assertions. Returns undefined when VITEST not set. */
+export function getActiveTrip(token: string): ActiveTrip | undefined {
+  if (process.env.VITEST !== "true") return undefined;
+  return activeTrips.get(token);
 }

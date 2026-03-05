@@ -6,6 +6,7 @@ import { getCard, formatCardResponse } from "./tools/getCard.js";
 import { reportPurchase } from "./tools/reportPurchase.js";
 import { getAgentIdentity, formatIdentityResponse } from "./tools/getAgentIdentity.js";
 import { initSampling, onTripStarted, onIdentityPresented, onServerClose } from "./sampling.js";
+import { reportBadgePresented } from "./lib/report-badge.js";
 
 const server = new McpServer({
   name: "payclaw",
@@ -139,23 +140,6 @@ server.tool(
     };
   }
 );
-
-async function reportBadgePresented(verificationToken: string, merchant: string): Promise<void> {
-  const apiUrl = process.env.PAYCLAW_API_URL || "https://payclaw.io";
-  const apiKey = process.env.PAYCLAW_API_KEY;
-  if (!apiKey) return;
-  try {
-    await fetch(`${apiUrl}/api/badge/report`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        verification_token: verificationToken,
-        event_type: "identity_presented",
-        merchant,
-      }),
-    });
-  } catch { /* fire-and-forget */ }
-}
 
 async function main() {
   const transport = new StdioServerTransport();
