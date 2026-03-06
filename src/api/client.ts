@@ -153,13 +153,13 @@ export function isApiMode(): boolean {
   return !!process.env.PAYCLAW_API_URL;
 }
 
-/** Base URL for API calls. Defaults to https://api.payclaw.io. */
+/** Base URL for API calls. Defaults to https://payclaw.io. */
 export function getBaseUrl(): string {
   const url = process.env.PAYCLAW_API_URL;
   if (url && url.trim().length > 0) {
     return url.trim().replace(/\/+$/, "");
   }
-  return "https://api.payclaw.io";
+  return "https://payclaw.io";
 }
 
 /**

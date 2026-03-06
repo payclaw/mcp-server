@@ -1,7 +1,7 @@
 {
   "name": "@payclaw/mcp-server",
   "mcpName": "io.github.payclaw/spend",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Badge identity + virtual Visa cards for AI agents. Declare, pay, audit — on existing Visa rails. MCP-native.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

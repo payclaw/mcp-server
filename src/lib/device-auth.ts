@@ -1,6 +1,6 @@
 import { storeConsentKey } from "./storage.js";
 
-const DEFAULT_API_URL = "https://api.payclaw.io";
+const DEFAULT_API_URL = "https://payclaw.io";
 
 function getBaseUrl(): string {
   const url = process.env.PAYCLAW_API_URL;
