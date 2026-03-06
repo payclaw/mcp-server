@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.7.3] - 2026-03-06 — Tier 3: Code Sync
+
+### Added
+- **F13**: `pendingActivation` dedup guard — concurrent `getAgentIdentity` calls reuse the same device flow instead of spawning duplicates
+- **F9**: `SYNC.md` documenting canonical file ownership between badge-server and mcp-server
+- **F9**: Canonical ownership header comments on all shared source files
+
+### Fixed
+- **F10**: `device-auth.ts` now uses `fetchWithTimeout` (10s AbortController timeout) — prevents indefinite hangs on network issues
+- **F11**: `device-auth.ts` `getBaseUrl()` validates HTTPS (or localhost) — blocks sending OAuth tokens over HTTP in production
+- **F12**: `device-auth.ts` sanitizes `interval` and `expires_in` from server response — prevents tight spin loops on malformed data
+
+### Refs
+- MCPDuro_Mar6 Tier 3
+
 ## [Unreleased] - Tier 2: Auth Flow Fixes
 
 ### Added

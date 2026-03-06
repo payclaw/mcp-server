@@ -1,3 +1,4 @@
+// Canonical: badge-server | Synced: 0.7.3 | Do not edit in mcp-server
 /**
  * Handler for payclaw_reportBadgePresented tool.
  * Extracted for testability (BUG-01.1 integration tests).

@@ -1,3 +1,4 @@
+// Canonical: badge-server | Synced: 0.7.3 | Do not edit in mcp-server
 /**
  * POST identity_presented to /api/badge/report.
  * Extracted for testability (BUG-01.1).

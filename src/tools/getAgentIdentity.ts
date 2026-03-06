@@ -1,3 +1,4 @@
+// Canonical: mcp-server | Synced: 0.7.3 | Do not edit in badge-server
 import * as api from "../api/client.js";
 import { getStoredConsentKey } from "../lib/storage.js";
 import { initiateDeviceAuth, pollForApproval } from "../lib/device-auth.js";
@@ -17,7 +18,7 @@ function getDisclosureFromToken(token: string, scope = "BROWSE"): string {
 /** Build identity result from OAuth token (when API doesn't accept OAuth Bearer yet). */
 function identityFromOAuthToken(
   token: string,
-  assuranceLevel?: string,
+  _assuranceLevel?: string,
   merchant?: string,
   assumeVerified = true
 ): IdentityResult {
@@ -54,6 +55,8 @@ export interface IdentityResult {
   activation_required?: boolean;
 }
 
+let pendingActivation: Promise<IdentityResult> | null = null;
+
 /**
  * Get agent identity token — Badge by PayClaw.
  * When no consent key exists: initiates device flow, returns activation instructions,
@@ -67,9 +70,17 @@ export async function getAgentIdentity(merchant?: string): Promise<IdentityResul
     return callWithKey(consentKey, merchant);
   }
 
-  // No key: initiate device flow
+  // No key: initiate device flow (reuse pending to avoid duplicate pollers)
   if (!consentKey) {
-    return startActivationFlow(merchant);
+    if (pendingActivation) return pendingActivation;
+    const p = startActivationFlow(merchant);
+    pendingActivation = p;
+    try {
+      const result = await p;
+      return result;
+    } finally {
+      pendingActivation = null;
+    }
   }
 
   // Key from file/memory (OAuth token from device flow)

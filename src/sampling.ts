@@ -1,3 +1,4 @@
+// Canonical: mcp-server | Synced: 0.7.3 | Do not edit in badge-server
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { parseResponse } from "./lib/parse-outcome.js";
 import { getStoredConsentKey } from "./lib/storage.js";

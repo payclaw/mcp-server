@@ -1,3 +1,4 @@
+// Canonical: badge-server | Synced: 0.7.3 | Do not edit in mcp-server
 /**
  * Parse agent response to sampling prompt into outcome bucket.
  * Extracted for testability (BUG-01.1).
