@@ -26,11 +26,21 @@ Formal input/output contract for MCP tools in `@payclaw/mcp-server` and `@paycla
 
 ### payclaw_reportBadgePresented
 
-**Input:** `{ verification_token: string, merchant: string }` — Token from getAgentIdentity; merchant where badge is being presented.
+**Input:** `{ verification_token: string, merchant: string, context?: "arrival" | "addtocart" | "checkout" | "other" }` — Token from getAgentIdentity; merchant where badge is being presented; optional context when Extended Auth enabled.
 
 **Output:** Text confirmation. Starts outcome tracking. When Extended Auth is enabled, your agent confirms merchant response; results logged to dashboard. Otherwise, agent reports via payclaw_reportBadgeOutcome.
 
-**App route:** `POST /api/badge/report`.
+**App route:** `POST /api/badge/report` (with optional `presentation_context`).
+
+---
+
+### payclaw_reportBadgeNotPresented
+
+**Input:** `{ verification_token: string, merchant: string, reason: "abandoned" | "merchant_didnt_ask" | "other" }` — Token; merchant where agent did not present; reason why.
+
+**Output:** Text confirmation. Logs that badge was not presented.
+
+**App route:** `POST /api/badge/report` (event_type: badge_not_presented).
 
 ---
 

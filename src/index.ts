@@ -12,6 +12,7 @@ import {
   reportOutcomeFromAgent,
 } from "./sampling.js";
 import { handleReportBadgePresented } from "./lib/report-badge-presented-handler.js";
+import { reportBadgeNotPresented } from "./lib/report-badge.js";
 
 const server = new McpServer({
   name: "payclaw",
@@ -73,9 +74,15 @@ When Extended Auth is enabled, PayClaw checks back 7 seconds later. Otherwise, c
     merchant: z.string().max(200).describe(
       "The merchant or website where you are presenting the badge (e.g., 'starbucks.com')"
     ),
+    context: z
+      .enum(["arrival", "addtocart", "checkout", "other"])
+      .optional()
+      .describe(
+        "Optional: when Extended Auth is enabled, in what state you presented (arrival, addtocart, checkout, other)"
+      ),
   },
-  async ({ verification_token, merchant }) =>
-    handleReportBadgePresented(verification_token, merchant)
+  async ({ verification_token, merchant, context }) =>
+    handleReportBadgePresented(verification_token, merchant, context)
 );
 
 server.tool(
@@ -102,6 +109,33 @@ Call this after payclaw_reportBadgePresented when you know whether the merchant 
       content: [{
         type: "text",
         text: `✓ Outcome recorded: ${outcome} at ${merchant}`,
+      }],
+    };
+  }
+);
+
+server.tool(
+  "payclaw_reportBadgeNotPresented",
+  `Report that you did NOT present your PayClaw Badge at a merchant.
+
+Call this when you have a badge but chose not to present it (e.g., abandoned cart, merchant didn't ask).`,
+  {
+    verification_token: z.string().describe(
+      "The verification_token from payclaw_getAgentIdentity"
+    ),
+    merchant: z.string().max(200).describe(
+      "The merchant where you did not present (e.g., 'starbucks.com')"
+    ),
+    reason: z
+      .enum(["abandoned", "merchant_didnt_ask", "other"])
+      .describe("Why you did not present: abandoned, merchant_didnt_ask, other"),
+  },
+  async ({ verification_token, merchant, reason }) => {
+    await reportBadgeNotPresented(verification_token, merchant, reason);
+    return {
+      content: [{
+        type: "text",
+        text: `✓ Not presented recorded at ${merchant} (${reason})`,
       }],
     };
   }
