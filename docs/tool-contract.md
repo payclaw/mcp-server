@@ -8,7 +8,7 @@ Formal input/output contract for MCP tools in `@payclaw/mcp-server` and `@paycla
 
 - **OAuth path (default):** No API key. Device flow via `POST /api/oauth/device/authorize` and `POST /api/oauth/token`. Consent key stored after user approves at `/activate`.
 - **Legacy API key:** Set `PAYCLAW_API_KEY` (pk_test_ or pk_live_). MCP calls `POST /api/agent-identity` with `Authorization: Bearer pk_...`.
-- **Extended Auth:** Set `PAYCLAW_EXTENDED_AUTH=true` to ask your agent to confirm how merchants responded when they requested your token. Default: agent reports via payclaw_reportBadgeOutcome.
+- **Extended Auth:** Set `PAYCLAW_EXTENDED_AUTH=true` so your agent confirms whether the merchant accepted or denied. Responses are logged to your dashboard so you can see visibility of your token by merchant. Default: agent reports via payclaw_reportBadgeOutcome.
 
 ---
 
@@ -28,7 +28,7 @@ Formal input/output contract for MCP tools in `@payclaw/mcp-server` and `@paycla
 
 **Input:** `{ verification_token: string, merchant: string }` — Token from getAgentIdentity; merchant where badge is being presented.
 
-**Output:** Text confirmation. Starts outcome tracking. When Extended Auth (`PAYCLAW_EXTENDED_AUTH=true`) is enabled, PayClaw checks back ~7s later. Otherwise, agent reports via payclaw_reportBadgeOutcome.
+**Output:** Text confirmation. Starts outcome tracking. When Extended Auth is enabled, your agent confirms merchant response; results logged to dashboard. Otherwise, agent reports via payclaw_reportBadgeOutcome.
 
 **App route:** `POST /api/badge/report`.
 
@@ -38,7 +38,7 @@ Formal input/output contract for MCP tools in `@payclaw/mcp-server` and `@paycla
 
 **Input:** `{ verification_token: string, merchant: string, outcome: "accepted" | "denied" | "inconclusive" }` — How the merchant responded when the agent presented the badge.
 
-**Output:** Text confirmation. Agent-only path — no sampling prompt. Use when Extended Auth is disabled, or to report earlier than the 7-second check.
+**Output:** Text confirmation. Agent-only path — no sampling prompt. Use when Extended Auth is disabled, or to report earlier than the 7-second confirmation.
 
 **App route:** `POST /api/badge/report` (event_type: trip_success or trip_failure).
 

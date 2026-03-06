@@ -41,7 +41,9 @@ No API key required. On first use, your agent will show a code and URL — appro
 
 ### Extended Auth (optional)
 
-When merchants request your token, PayClaw can ask your agent to confirm how they responded — accepted or denied. This helps improve merchant outreach and trust signals. Enable with `PAYCLAW_EXTENDED_AUTH=true`:
+When and where merchants request your token, your agent confirms whether the merchant accepted or denied. Responses are logged to your dashboard so you can see visibility of your token by merchant.
+
+Enable with `PAYCLAW_EXTENDED_AUTH=true`:
 
 ```json
 "env": {
@@ -50,7 +52,7 @@ When merchants request your token, PayClaw can ask your agent to confirm how the
 }
 ```
 
-Without it, your agent reports outcomes via `payclaw_reportBadgeOutcome` when it knows the result. Extended Auth adds an in-flow confirmation prompt for developers who want richer data.
+Without it, your agent reports outcomes via `payclaw_reportBadgeOutcome` when it knows the result.
 
 Or install via ClawHub:
 ```bash
@@ -112,7 +114,7 @@ Agent → presents disclosure to merchant (payclaw_reportBadgePresented)
 Agent → payclaw_reportBadgeOutcome (accepted | denied | inconclusive)
 ```
 
-When Extended Auth is enabled (`PAYCLAW_EXTENDED_AUTH=true`), PayClaw asks your agent to confirm how merchants responded when they requested your token. Otherwise, your agent reports the outcome directly.
+When Extended Auth is enabled, your agent confirms whether the merchant accepted or denied; responses are logged to your dashboard so you can see visibility of your token by merchant. Otherwise, your agent reports the outcome via `payclaw_reportBadgeOutcome`.
 
 Your agent is now a declared, authorized actor. Not anonymous traffic.
 
