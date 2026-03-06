@@ -214,7 +214,7 @@ export async function getCard(input: GetCardInput): Promise<CardResult> {
     return {
       product_name: "PayClaw",
       status: "error",
-      message: "PAYCLAW_API_KEY environment variable is not set.",
+      message: "Not authenticated. Run payclaw_getAgentIdentity first to activate your agent, or set PAYCLAW_API_KEY in your MCP config.",
     };
   }
 

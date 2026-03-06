@@ -16,7 +16,7 @@ import { reportBadgeNotPresented } from "./lib/report-badge.js";
 
 const server = new McpServer({
   name: "payclaw",
-  version: "0.7.0",
+  version: "0.7.2",
 });
 
 // Badge tool — re-exported from @payclaw/badge logic (DQ-46: Spend includes Badge)
