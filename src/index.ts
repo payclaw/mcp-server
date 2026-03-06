@@ -17,7 +17,7 @@ import { getAuthMode } from "./lib/storage.js";
 
 const server = new McpServer({
   name: "payclaw",
-  version: "0.7.3",
+  version: "0.7.4",
 });
 
 // Badge tool — re-exported from @payclaw/badge logic (DQ-46: Spend includes Badge)

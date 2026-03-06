@@ -82,9 +82,15 @@ Same as mcp-server. Optional `merchant` input.
 
 ### payclaw_reportBadgePresented
 
-**Input:** `{}` (no params in badge package — lightweight). Requires `PAYCLAW_API_KEY` to call API.
+**Input:** `{ verification_token, merchant, context? }` — same signature as mcp-server since 0.7.
 
-**Note:** mcp-server version takes `verification_token` and `merchant`; badge-server version is simpler (no token/merchant params). Badge-server does not call `/api/badge/report` with token/merchant; mcp-server does.
+### payclaw_reportBadgeOutcome
+
+**Input:** `{ verification_token, merchant, outcome }` — report whether merchant accepted or denied the badge.
+
+### payclaw_reportBadgeNotPresented
+
+**Input:** `{ verification_token, merchant, reason? }` — report that the badge was not presented (e.g. merchant has no UCP support).
 
 ---
 

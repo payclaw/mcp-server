@@ -230,8 +230,8 @@ function reapStaleTrips(): void {
 export function onServerClose(): void {
   for (const [token, trip] of activeTrips) {
     if (trip.presented && !trip.outcome) {
-      // Agent finished normally — assume success
-      resolveTrip(token, "accepted", "server_close_clean_exit");
+      // Agent disconnected — outcome unknown
+      resolveTrip(token, "inconclusive", "server_close");
     }
   }
   activeTrips.clear();

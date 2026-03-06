@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.4] - 2026-03-06 — Tier 4: Data Quality & UX
+
+### Fixed
+- **F15**: `onServerClose` now resolves trips as `"inconclusive"` instead of `"accepted"` — server disconnect is not proof of merchant acceptance
+- **F18**: `tool-contract.md` updated to reflect badge-server's current tool signatures (identical to mcp-server since 0.7)
+
+### Refs
+- MCPDuro_Mar6 Tier 4
+
 ## [0.7.3] - 2026-03-06 — Tier 3: Code Sync
 
 ### Added
