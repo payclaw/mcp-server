@@ -32,7 +32,7 @@
         },
         {
           "name": "PAYCLAW_EXTENDED_AUTH",
-          "description": "When enabled, asks your agent to confirm merchant accepted or denied. Logged to dashboard so you can see visibility of your token by merchant. Default: false (agent reports via payclaw_reportBadgeOutcome).",
+          "description": "Set to \"true\" or \"1\" to enable. Asks your agent to confirm merchant accepted or denied. Logged to dashboard so you can see visibility of your token by merchant. Default: false (agent reports via payclaw_reportBadgeOutcome).",
           "isRequired": false,
           "format": "string",
           "isSecret": false
