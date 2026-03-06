@@ -13,6 +13,10 @@ Your AI agent looks like a bot to every merchant on the internet. PayClaw gives 
 [![npm version](https://img.shields.io/npm/v/@payclaw/mcp-server.svg)](https://www.npmjs.com/package/@payclaw/mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+<a href="https://glama.ai/mcp/servers/@payclaw/payclaw-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@payclaw/payclaw-mcp/badge" alt="payclaw-mcp MCP server" />
+</a>
+
 ---
 
 ## Quick Start
