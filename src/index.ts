@@ -8,11 +8,10 @@ import { getAgentIdentity, formatIdentityResponse } from "./tools/getAgentIdenti
 import {
   initSampling,
   onTripStarted,
-  onIdentityPresented,
   onServerClose,
   reportOutcomeFromAgent,
 } from "./sampling.js";
-import { reportBadgePresented } from "./lib/report-badge.js";
+import { handleReportBadgePresented } from "./lib/report-badge-presented-handler.js";
 
 const server = new McpServer({
   name: "payclaw",
@@ -75,25 +74,8 @@ When Extended Auth is enabled, PayClaw checks back 7 seconds later. Otherwise, c
       "The merchant or website where you are presenting the badge (e.g., 'starbucks.com')"
     ),
   },
-  async ({ verification_token, merchant }) => {
-    onIdentityPresented(verification_token, merchant);
-    await reportBadgePresented(verification_token, merchant);
-    return {
-      content: [{
-        type: "text",
-        text: [
-          `✓ Badge presentation logged at ${merchant}`,
-          ``,
-          `  Token:    ${verification_token.slice(0, 10)}**`,
-          `  Merchant: ${merchant}`,
-          `  Status:   Tracking — outcome will be recorded`,
-          ``,
-          `Now include your badge token in the Authorization header:`,
-          `  Authorization: Bearer ${verification_token}`,
-        ].join("\n"),
-      }],
-    };
-  }
+  async ({ verification_token, merchant }) =>
+    handleReportBadgePresented(verification_token, merchant)
 );
 
 server.tool(

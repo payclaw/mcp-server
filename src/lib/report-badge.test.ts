@@ -97,4 +97,11 @@ describe("reportBadgePresented", () => {
 
     await expect(reportBadgePresented("tok", "m")).resolves.toBeUndefined();
   });
+
+  it("does not throw when POST returns 500", async () => {
+    vi.mocked(storage.getStoredConsentKey).mockReturnValue("pk_test_xxx");
+    mockFetch.mockResolvedValue({ ok: false, status: 500 });
+
+    await expect(reportBadgePresented("tok", "m")).resolves.toBeUndefined();
+  });
 });
