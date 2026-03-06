@@ -1,5 +1,6 @@
 import { createIntent, getBalance, MOCK_CARD } from "../mock/store.js";
 import * as api from "../api/client.js";
+import { getStoredConsentKey } from "../lib/storage.js";
 
 export interface GetCardInput {
   merchant: string;
@@ -209,7 +210,7 @@ function getCardViaMock(input: GetCardInput): CardResult {
 }
 
 export async function getCard(input: GetCardInput): Promise<CardResult> {
-  if (!process.env.PAYCLAW_API_KEY) {
+  if (!getStoredConsentKey()) {
     return {
       product_name: "PayClaw",
       status: "error",

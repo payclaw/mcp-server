@@ -1,6 +1,7 @@
 import { getIntent, updateIntent, deductBalance, getBalance } from "../mock/store.js";
 import { randomUUID } from "crypto";
 import * as api from "../api/client.js";
+import { getStoredConsentKey } from "../lib/storage.js";
 
 export interface ReportPurchaseInput {
   intent_id: string;
@@ -100,7 +101,7 @@ function reportViaMock(input: ReportPurchaseInput): object {
 }
 
 export async function reportPurchase(input: ReportPurchaseInput): Promise<object> {
-  if (!process.env.PAYCLAW_API_KEY) {
+  if (!getStoredConsentKey()) {
     return {
       product_name: "PayClaw",
       status: "error",
