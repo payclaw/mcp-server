@@ -13,6 +13,7 @@ import {
 } from "./sampling.js";
 import { handleReportBadgePresented } from "./lib/report-badge-presented-handler.js";
 import { reportBadgeNotPresented } from "./lib/report-badge.js";
+import { getAuthMode } from "./lib/storage.js";
 
 const server = new McpServer({
   name: "payclaw",
@@ -202,6 +203,9 @@ async function main() {
   process.on("SIGTERM", () => { onServerClose(); process.exit(0); });
 
   process.stderr.write("PayClaw MCP server running on stdio\n");
+  if (process.env.VITEST !== "true") {
+    process.stderr.write(`[PayClaw] Auth: ${getAuthMode()}\n`);
+  }
 }
 
 main().catch((err) => {

@@ -18,16 +18,17 @@ function getDisclosureFromToken(token: string, scope = "BROWSE"): string {
 function identityFromOAuthToken(
   token: string,
   assuranceLevel?: string,
-  merchant?: string
+  merchant?: string,
+  assumeVerified = true
 ): IdentityResult {
   return {
     product_name: "PayClaw Badge",
-    status: "active",
+    status: assumeVerified ? "active" : "pending",
     agent_disclosure: getDisclosureFromToken(token),
     verification_token: token,
     trust_url: "https://payclaw.io/trust",
     contact: "agent_identity@payclaw.io",
-    principal_verified: true,
+    principal_verified: assumeVerified,
     mfa_confirmed: false,
     spend_available: false,
     spend_cta: "Fund your wallet at payclaw.io to enable agent payments.",
@@ -127,7 +128,7 @@ async function callWithOAuthToken(token: string, merchant?: string): Promise<Ide
     };
   } catch {
     // API may not accept OAuth tokens yet — build identity locally
-    return identityFromOAuthToken(token, undefined, merchant);
+    return identityFromOAuthToken(token, undefined, merchant, false);
   }
 }
 

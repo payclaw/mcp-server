@@ -41,6 +41,36 @@ export function getStoredConsentKey(): string | null {
 }
 
 /**
+ * Returns a human-readable description of the active auth mode.
+ * Used for startup logging — never exposes full key values.
+ */
+export function getAuthMode(): string {
+  const envKey = process.env.PAYCLAW_API_KEY;
+  if (envKey && envKey.trim().length > 0) {
+    const masked = envKey.trim().substring(0, 8) + "****";
+    return `API key (${masked})`;
+  }
+
+  const filePath = getConsentKeyPath();
+  try {
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, "utf8").trim();
+      if (content.length > 0) {
+        return "consent key (~/.payclaw/consent_key)";
+      }
+    }
+  } catch {
+    // File read failed
+  }
+
+  if (memoryConsentKey) {
+    return "consent key (in-memory)";
+  }
+
+  return "none (device flow will trigger on first tool call)";
+}
+
+/**
  * Store consent key to ~/.payclaw/consent_key.
  * Creates directory if needed. Falls back to memory if file write fails.
  */

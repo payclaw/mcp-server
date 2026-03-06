@@ -151,7 +151,7 @@ export async function getAgentIdentity(
 }
 
 export function isApiMode(): boolean {
-  return !!process.env.PAYCLAW_API_URL;
+  return !!process.env.PAYCLAW_API_URL || !!getStoredConsentKey();
 }
 
 /** Base URL for API calls. Defaults to https://payclaw.io. */
