@@ -1,3 +1,4 @@
+// Canonical: mcp-server | Synced: 0.7.3 | Structurally divergent — badge-server has badge-only subset
 import type {
   ApiIntentResponse,
   ApiCardResponse,
