@@ -4,7 +4,7 @@
 
 Your AI agent looks like a bot to every merchant on the internet. PayClaw gives it two things:
 
-**Badge** — Declares your agent as an authorized actor. The skeleton key that lets it through merchant defenses. Free. No card required.
+**Badge** — Declares your agent as an authorized actor. The Universal Commerce Protocol "identity" token for a merchant handshake. Free. No card required.
 
 **Spend** — Issues a single-use virtual Visa when your agent needs to pay. Human-approved. Self-destructs after use. Your real card never enters the chat.
 
