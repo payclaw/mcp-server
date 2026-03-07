@@ -97,7 +97,13 @@ export async function getAgentIdentity(merchant?: string, merchantUrl?: string):
   }
 
   // UCP enrichment: check merchant manifest when merchantUrl provided
-  if (merchantUrl && result.verification_token && !result.activation_required) {
+  // Skip for mock/sandbox tokens — don't generate checkoutPatch for non-real credentials
+  if (
+    merchantUrl &&
+    result.verification_token &&
+    !result.activation_required &&
+    !result.verification_token.startsWith(MOCK_TOKEN_PREFIX)
+  ) {
     result = await enrichWithUCP(result, merchantUrl);
   }
 
