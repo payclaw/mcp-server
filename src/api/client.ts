@@ -27,7 +27,7 @@ function log(level: "info" | "warn" | "error", msg: string): void {
 const REQUEST_TIMEOUT_MS = 30_000;
 
 function getConfig() {
-  const baseUrl = process.env.PAYCLAW_API_URL;
+  const baseUrl = process.env.PAYCLAW_API_URL || getBaseUrl();
   const apiKey = getStoredConsentKey();
   if (!baseUrl) throw new PayClawApiError("PayClaw API URL is not configured.");
   if (!apiKey) throw new PayClawApiError("PayClaw API key is not configured.");
@@ -61,7 +61,19 @@ async function request<T>(url: string, init: RequestInit): Promise<T> {
 
   let res: Response;
   try {
-    res = await fetch(url, { ...init, signal: controller.signal });
+    // SEC-014: Use manual redirect to preserve Authorization header across redirects.
+    // Node fetch strips Authorization on cross-origin redirects (e.g. payclaw.io → www.payclaw.io).
+    res = await fetch(url, { ...init, redirect: "manual", signal: controller.signal });
+
+    // Follow redirects manually, preserving auth headers
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get("location");
+      if (location) {
+        const redirectUrl = new URL(location, url).href;
+        log("warn", `${method} ${urlPath} → ${res.status} redirect to ${new URL(redirectUrl).host} (re-sending with auth)`);
+        res = await fetch(redirectUrl, { ...init, redirect: "manual", signal: controller.signal });
+      }
+    }
   } catch (err) {
     clearTimeout(timeout);
     if (err instanceof Error && err.name === "AbortError") {
@@ -170,13 +182,13 @@ export function isApiMode(): boolean {
   return !!process.env.PAYCLAW_API_URL || !!getStoredConsentKey();
 }
 
-/** Base URL for API calls. Defaults to https://payclaw.io. */
+/** Base URL for API calls. Defaults to https://www.payclaw.io (canonical, avoids redirect). */
 export function getBaseUrl(): string {
   const url = process.env.PAYCLAW_API_URL;
   if (url && url.trim().length > 0) {
     return url.trim().replace(/\/+$/, "");
   }
-  return "https://payclaw.io";
+  return "https://www.payclaw.io";
 }
 
 /**
