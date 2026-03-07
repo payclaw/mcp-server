@@ -43,10 +43,16 @@ describe("handleReportBadgePresented (payclaw_reportBadgePresented tool)", () =>
     );
   });
 
-  it("returns response including Badge presentation logged and merchant", async () => {
+  it("returns { recorded: true } as first content block", async () => {
     const result = await handleReportBadgePresented("tok_abc123xyz", "starbucks.com");
 
-    const text = result.content[0].type === "text" ? result.content[0].text : "";
+    expect(result.content[0]).toEqual({ type: "text", text: JSON.stringify({ recorded: true }) });
+  });
+
+  it("returns human-readable summary as second content block", async () => {
+    const result = await handleReportBadgePresented("tok_abc123xyz", "starbucks.com");
+
+    const text = result.content[1].text;
     expect(text).toContain("Badge presentation logged");
     expect(text).toContain("starbucks.com");
     expect(text).toContain("Tracking");
@@ -69,7 +75,7 @@ describe("handleReportBadgePresented (payclaw_reportBadgePresented tool)", () =>
   it("returns response with empty merchant without throwing", async () => {
     const result = await handleReportBadgePresented("tok_xyz", "");
 
-    expect(result.content).toHaveLength(1);
+    expect(result.content).toHaveLength(2);
     expect(sampling.onIdentityPresented).toHaveBeenCalledWith("tok_xyz", "");
     expect(reportBadge.reportBadgePresented).toHaveBeenCalledWith("tok_xyz", "", undefined, undefined);
   });
