@@ -1,4 +1,4 @@
-// Canonical: badge-server | Synced: 0.7.3 | Do not edit in mcp-server
+// Canonical: badge-server | Synced: PRD-3 | Do not edit in mcp-server
 /**
  * POST identity_presented to /api/badge/report.
  * Extracted for testability (BUG-01.1).
@@ -12,7 +12,8 @@ const DEFAULT_API_URL = "https://payclaw.io";
 export async function reportBadgePresented(
   verificationToken: string,
   merchant: string,
-  context?: "arrival" | "addtocart" | "checkout" | "other"
+  context?: "arrival" | "addtocart" | "checkout" | "other",
+  checkoutSessionId?: string
 ): Promise<void> {
   const apiUrl = process.env.PAYCLAW_API_URL || DEFAULT_API_URL;
   const key = getStoredConsentKey();
@@ -30,6 +31,7 @@ export async function reportBadgePresented(
         event_type: "identity_presented",
         merchant,
         ...(context && { presentation_context: context }),
+        ...(checkoutSessionId && { checkout_session_id: checkoutSessionId }),
       }),
     });
     if (!res.ok) {
