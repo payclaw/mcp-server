@@ -45,7 +45,7 @@ No card is issued. No money moves. For payment, use payclaw_getCard (included in
 
     // Track trip start for sampling (DQ-54)
     if (result.verification_token) {
-      onTripStarted(result.verification_token, merchant || "unknown");
+      onTripStarted(result.verification_token, merchantUrl || merchant || "unknown");
     }
 
     const formatted = formatIdentityResponse(result);
