@@ -1,4 +1,4 @@
-// Canonical: mcp-server | Synced: 0.7.3 | Do not edit in badge-server
+// Canonical: mcp-server | Synced: 0.7.6 | Do not edit in badge-server
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { parseResponse } from "./lib/parse-outcome.js";
 import { getStoredConsentKey } from "./lib/storage.js";
@@ -215,14 +215,22 @@ async function reportOutcome(
 
 function reapStaleTrips(): void {
   const now = Date.now();
+  let reaped = 0;
   for (const [token, trip] of activeTrips) {
     if (now - trip.startedAt > STALE_TRIP_MS) {
+      const ageMin = Math.round((now - trip.startedAt) / 60000);
       if (trip.presented && !trip.outcome) {
+        process.stderr.write(`[PayClaw] Reaped stale trip: ${token.slice(0, 10)}** (${trip.merchant.slice(0, 64)}, age: ${ageMin}m)\n`);
         resolveTrip(token, "inconclusive", "stale_trip_reaped");
+        reaped++;
       } else {
         activeTrips.delete(token);
+        reaped++;
       }
     }
+  }
+  if (activeTrips.size > 0 || reaped > 0) {
+    process.stderr.write(`[PayClaw] Active trips: ${activeTrips.size} | Reaped: ${reaped}\n`);
   }
 }
 
@@ -258,11 +266,33 @@ export function getActiveTrip(token: string): ActiveTrip | undefined {
 /**
  * Report outcome from agent (payclaw_reportBadgeOutcome tool).
  * Agent-only path — no sampling prompt. Resolves trip and POSTs to API.
+ * When token not in activeTrips (e.g. after restart), looks up by merchant or POSTs directly.
  */
 export function reportOutcomeFromAgent(
   token: string,
   merchant: string,
   outcome: "accepted" | "denied" | "inconclusive"
 ): void {
-  resolveTrip(token, outcome, "agent_reported");
+  if (activeTrips.has(token)) {
+    resolveTrip(token, outcome, "agent_reported");
+    return;
+  }
+  // Token may be from before restart — try to find a unique trip by merchant
+  let matchToken: string | null = null;
+  let matchCount = 0;
+  for (const [t, trip] of activeTrips) {
+    if (trip.merchant === merchant && trip.presented && !trip.outcome) {
+      matchToken = t;
+      matchCount++;
+      if (matchCount > 1) break;
+    }
+  }
+  if (matchCount === 1 && matchToken) {
+    resolveTrip(matchToken, outcome, "agent_reported");
+    return;
+  }
+  // No matching trip — still report to API so outcome is recorded
+  reportOutcome(token, outcome, merchant, "agent_reported").catch((err) => {
+    process.stderr.write(`[BADGE] Failed to report outcome: ${err}\n`);
+  });
 }

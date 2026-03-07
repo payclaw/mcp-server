@@ -13,6 +13,7 @@ import {
   onServerClose,
   resetSamplingState,
   getActiveTrip,
+  reportOutcomeFromAgent,
 } from "./sampling.js";
 import * as storage from "./lib/storage.js";
 
@@ -182,6 +183,123 @@ describe("sampling", () => {
       );
       expect(reportCalls).toHaveLength(0);
       delete process.env.PAYCLAW_EXTENDED_AUTH;
+    });
+  });
+
+  describe("multi-merchant trip lifecycle", () => {
+    it("starting trip B resolves presented trip A as agent_moved_to_new_merchant", () => {
+      onTripStarted("tok_a", "amazon.com");
+      onIdentityPresented("tok_a", "amazon.com");
+
+      expect(getActiveTrip("tok_a")).toBeDefined();
+      expect(getActiveTrip("tok_a")!.presented).toBe(true);
+
+      onTripStarted("tok_b", "target.com");
+
+      expect(getActiveTrip("tok_a")).toBeUndefined();
+      const tripB = getActiveTrip("tok_b");
+      expect(tripB).toBeDefined();
+      expect(tripB!.merchant).toBe("target.com");
+    });
+
+    it("trip B can be presented and resolved after trip A is auto-resolved", () => {
+      onTripStarted("tok_a", "amazon.com");
+      onIdentityPresented("tok_a", "amazon.com");
+      onTripStarted("tok_b", "target.com");
+      onIdentityPresented("tok_b", "target.com");
+
+      reportOutcomeFromAgent("tok_b", "target.com", "accepted");
+      expect(getActiveTrip("tok_b")).toBeUndefined();
+    });
+
+    it("non-presented trip A is NOT resolved when trip B starts", () => {
+      onTripStarted("tok_a", "amazon.com");
+      onTripStarted("tok_b", "target.com");
+
+      expect(getActiveTrip("tok_a")).toBeDefined();
+      expect(getActiveTrip("tok_b")).toBeDefined();
+    });
+
+    it("same-merchant trip restart does not resolve existing trip", () => {
+      onTripStarted("tok_a", "amazon.com");
+      onIdentityPresented("tok_a", "amazon.com");
+      onTripStarted("tok_b", "amazon.com");
+
+      expect(getActiveTrip("tok_a")).toBeDefined();
+      expect(getActiveTrip("tok_b")).toBeDefined();
+    });
+
+    it("three-merchant chain resolves each previous trip correctly", () => {
+      onTripStarted("tok_1", "amazon.com");
+      onIdentityPresented("tok_1", "amazon.com");
+
+      onTripStarted("tok_2", "target.com");
+      expect(getActiveTrip("tok_1")).toBeUndefined();
+      onIdentityPresented("tok_2", "target.com");
+
+      onTripStarted("tok_3", "walmart.com");
+      expect(getActiveTrip("tok_2")).toBeUndefined();
+      onIdentityPresented("tok_3", "walmart.com");
+
+      expect(getActiveTrip("tok_3")).toBeDefined();
+      expect(getActiveTrip("tok_3")!.merchant).toBe("walmart.com");
+    });
+
+    it("reportOutcomeFromAgent falls back to merchant search when token unknown", () => {
+      onTripStarted("tok_a", "amazon.com");
+      onIdentityPresented("tok_a", "amazon.com");
+
+      reportOutcomeFromAgent("unknown_tok", "amazon.com", "accepted");
+      expect(getActiveTrip("tok_a")).toBeUndefined();
+    });
+
+    it("reportOutcomeFromAgent with no matching trip still POSTs to API", () => {
+      mockFetch.mockClear();
+
+      reportOutcomeFromAgent("orphan_tok", "orphan.com", "denied");
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const [url, opts] = mockFetch.mock.calls[0];
+      expect(url).toContain("/api/badge/report");
+      expect(JSON.parse(opts.body)).toMatchObject({
+        verification_token: "orphan_tok",
+        merchant: "orphan.com",
+        outcome: "denied",
+      });
+    });
+
+    it("reportOutcomeFromAgent with ambiguous merchant match falls through to API POST", () => {
+      mockFetch.mockClear();
+      // Two trips at same merchant, both presented
+      onTripStarted("tok_a", "amazon.com");
+      onIdentityPresented("tok_a", "amazon.com");
+      onTripStarted("tok_b", "amazon.com");
+      onIdentityPresented("tok_b", "amazon.com");
+
+      mockFetch.mockClear();
+      reportOutcomeFromAgent("unknown_tok", "amazon.com", "accepted");
+
+      // Should NOT resolve either trip (ambiguous) — falls through to direct POST
+      expect(getActiveTrip("tok_a")).toBeDefined();
+      expect(getActiveTrip("tok_b")).toBeDefined();
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(String(mockFetch.mock.calls[0][0])).toContain("/api/badge/report");
+    });
+
+    it("API report includes correct event_type and detail for moved merchant", () => {
+      mockFetch.mockClear();
+      onTripStarted("tok_a", "amazon.com");
+      onIdentityPresented("tok_a", "amazon.com");
+
+      onTripStarted("tok_b", "target.com");
+
+      const reportCalls = mockFetch.mock.calls.filter((c) =>
+        String(c[0]).includes("/api/badge/report")
+      );
+      expect(reportCalls.length).toBeGreaterThanOrEqual(1);
+      const body = JSON.parse(reportCalls[0][1].body);
+      expect(body.event_type).toBe("trip_success");
+      expect(body.detail).toBe("agent_moved_to_new_merchant");
     });
   });
 });

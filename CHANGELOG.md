@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.7.6] - 2026-03-06 — Tier 6: Stress Test Readiness
+
+### Added
+- **F22**: `reportOutcomeFromAgent` recovery logic — orphaned tokens (e.g. after restart) now searched by merchant, with direct API POST fallback
+- **F23**: Multi-merchant trip lifecycle tests — verifies `agent_moved_to_new_merchant` resolution, three-merchant chains, merchant fallback search, and direct API POST for orphaned tokens
+- **F24**: Operational logging in `reapStaleTrips()` — logs active trip count and per-trip reap events with truncated token and merchant
+- **F25**: Pipeline verification script (`internalops/tests/badge-stress-test-v1.1/verify-pipeline.ts`) — end-to-end check from MCP tool calls through API to Supabase views
+
+### Refs
+- MCPDuro_Mar6 Tier 6
+
 ## [0.7.5] - 2026-03-06 — Tier 5: Dependency Alignment
 
 ### Changed
