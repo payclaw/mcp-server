@@ -30,14 +30,19 @@ Add to your MCP client config (Claude Desktop, Cursor, or any MCP client):
       "command": "npx",
       "args": ["-y", "@payclaw/mcp-server"],
       "env": {
-        "PAYCLAW_API_URL": "https://payclaw.io"
+        "PAYCLAW_API_KEY": "pk_live_your_key_here",
+        "PAYCLAW_API_URL": "https://www.payclaw.io"
       }
     }
   }
 }
 ```
 
-No API key required. On first use, your agent will show a code and URL — approve on your phone, and your Consent Key is stored. Optional: set `PAYCLAW_API_KEY` for existing accounts (backward compatible).
+Get your API key at [payclaw.io/dashboard/keys](https://www.payclaw.io/dashboard/keys). API keys don't expire.
+
+### Try without an account
+
+Want to try PayClaw before creating an account? Omit `PAYCLAW_API_KEY` — on first use, your agent will show a verification code and URL. Approve on your phone to get a temporary session. When you're ready for a permanent setup, create an account and generate an API key.
 
 ### Extended Auth (optional)
 
@@ -175,7 +180,8 @@ If you only need identity (no payment), use the lighter package:
       "command": "npx",
       "args": ["-y", "@payclaw/badge"],
       "env": {
-        "PAYCLAW_API_URL": "https://payclaw.io"
+        "PAYCLAW_API_KEY": "pk_live_your_key_here",
+        "PAYCLAW_API_URL": "https://www.payclaw.io"
       }
     }
   }

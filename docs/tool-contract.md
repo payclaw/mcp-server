@@ -6,8 +6,8 @@ Formal input/output contract for MCP tools in `@payclaw/mcp-server` and `@paycla
 
 ## Auth
 
-- **OAuth path (default):** No API key. Device flow via `POST /api/oauth/device/authorize` and `POST /api/oauth/token`. Consent key stored after user approves at `/activate`.
-- **Legacy API key:** Set `PAYCLAW_API_KEY` (pk_test_ or pk_live_). MCP calls `POST /api/agent-identity` with `Authorization: Bearer pk_...`.
+- **API key (recommended):** Set `PAYCLAW_API_KEY` (`pk_live_*` or `pk_test_*`). Permanent — does not expire. Get one at [payclaw.io/dashboard/keys](https://www.payclaw.io/dashboard/keys). MCP calls `POST /api/agent-identity` with `Authorization: Bearer pk_...`.
+- **Device flow (quick start):** No API key needed. OAuth device flow via `POST /api/oauth/device/authorize` and `POST /api/oauth/token`. Consent key stored after user approves at `/activate`. Sessions are temporary — switch to an API key for permanent access.
 - **Extended Auth:** Set `PAYCLAW_EXTENDED_AUTH=true` so your agent confirms whether the merchant accepted or denied. Responses are logged to your dashboard so you can see visibility of your token by merchant. Default: agent reports via payclaw_reportBadgeOutcome.
 
 ---
