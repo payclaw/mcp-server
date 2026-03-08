@@ -90,7 +90,10 @@ async function request<T>(url: string, init: RequestInit): Promise<T> {
   if (res.status === 401) {
     log("error", `${method} ${urlPath} → 401 unauthorized`);
     throw new PayClawApiError(
-      "Authentication failed. Please check your API key.",
+      "Your PayClaw session has expired. To continue, add a permanent API key to your MCP config:\n\n" +
+      "  1. Get a key: https://www.payclaw.io/dashboard/keys\n" +
+      "  2. Add to your MCP config: PAYCLAW_API_KEY=pk_live_...\n\n" +
+      "Permanent keys don't expire. See: https://www.payclaw.io/docs/mcp-setup",
       401,
     );
   }

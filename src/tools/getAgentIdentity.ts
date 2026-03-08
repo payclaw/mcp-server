@@ -64,6 +64,8 @@ export interface IdentityResult {
   checkoutPatch?: Record<string, unknown>;
   /** UCP: warning when version mismatch etc. */
   ucpWarning?: string;
+  /** Session expired — agent should surface directed action to user */
+  session_expired?: boolean;
 }
 
 let pendingActivation: Promise<IdentityResult> | null = null;
@@ -196,9 +198,26 @@ async function callWithOAuthToken(token: string, merchant?: string): Promise<Ide
       ...result,
     };
   } catch (err) {
-    process.stderr.write(`[PayClaw] OAuth identity API failed: ${err instanceof Error ? err.message : String(err)}\n`);
-    // Fallback to local identity — but do NOT hardcode spend_available: false
-    // since we can't determine spend status without the API
+    const msg = err instanceof Error ? err.message : String(err);
+    process.stderr.write(`[PayClaw] OAuth identity API failed: ${msg}\n`);
+
+    // Auth failure: surface it — don't hide behind a local fallback
+    if (err instanceof Error && "statusCode" in err && (err as { statusCode: number }).statusCode === 401) {
+      return {
+        product_name: "PayClaw Badge",
+        status: "session_expired",
+        agent_disclosure: "PayClaw session expired",
+        verification_token: "",
+        trust_url: "https://www.payclaw.io/trust",
+        contact: "agent_identity@payclaw.io",
+        principal_verified: false,
+        spend_available: false,
+        session_expired: true,
+        message: msg,
+      };
+    }
+
+    // Other errors (network, 5xx): fallback to local identity
     const fallback = identityFromOAuthToken(token, undefined, merchant, false);
     fallback.spend_available = undefined;
     fallback.spend_cta = "Could not verify spend status. Try payclaw_getCard directly — it will check your balance.";
@@ -268,6 +287,10 @@ async function startActivationFlow(merchant?: string): Promise<IdentityResult> {
 export function formatIdentityResponse(r: IdentityResult): string {
   if (r.activation_required && r.message) {
     return r.message;
+  }
+
+  if (r.session_expired && r.message) {
+    return `✗ SESSION EXPIRED\n\n  ${r.message}`;
   }
 
   if (r.status === "error") {
