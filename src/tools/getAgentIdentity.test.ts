@@ -32,6 +32,7 @@ describe("getAgentIdentity — 401 handling", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    delete process.env.PAYCLAW_API_KEY;
   });
 
   it("surfaces session_expired when OAuth token gets 401", async () => {
@@ -88,8 +89,6 @@ describe("getAgentIdentity — 401 handling", () => {
     expect(result.message).toContain("PayClaw authentication failed");
     expect(result.principal_verified).toBe(false);
     expect(result.merchant).toBe("test-merchant");
-
-    delete process.env.PAYCLAW_API_KEY;
   });
 
   it("formats session_expired result with directed action", async () => {

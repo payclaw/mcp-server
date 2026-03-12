@@ -68,6 +68,22 @@ export interface IdentityResult {
   session_expired?: boolean;
 }
 
+function buildSessionExpiredResult(merchant?: string, message?: string): IdentityResult {
+  return {
+    product_name: "PayClaw Badge",
+    status: "session_expired",
+    agent_disclosure: "PayClaw session expired",
+    verification_token: "",
+    trust_url: "https://payclaw.io/trust",
+    contact: "agent_identity@payclaw.io",
+    principal_verified: false,
+    spend_available: false,
+    session_expired: true,
+    merchant: merchant || undefined,
+    message,
+  };
+}
+
 let pendingActivation: Promise<IdentityResult> | null = null;
 
 /**
@@ -176,19 +192,7 @@ async function callWithKey(apiKey: string, merchant?: string): Promise<IdentityR
     process.stderr.write(`[PayClaw] API key identity failed: ${msg}\n`);
 
     if (err instanceof api.PayClawApiError && err.statusCode === 401) {
-      return {
-        product_name: "PayClaw Badge",
-        status: "session_expired",
-        agent_disclosure: "PayClaw session expired",
-        verification_token: "",
-        trust_url: "https://www.payclaw.io/trust",
-        contact: "agent_identity@payclaw.io",
-        principal_verified: false,
-        spend_available: false,
-        session_expired: true,
-        merchant: merchant || undefined,
-        message: msg,
-      };
+      return buildSessionExpiredResult(merchant, msg);
     }
 
     return {
@@ -222,19 +226,7 @@ async function callWithOAuthToken(token: string, merchant?: string): Promise<Ide
 
     // Auth failure: surface it — don't hide behind a local fallback
     if (err instanceof api.PayClawApiError && err.statusCode === 401) {
-      return {
-        product_name: "PayClaw Badge",
-        status: "session_expired",
-        agent_disclosure: "PayClaw session expired",
-        verification_token: "",
-        trust_url: "https://www.payclaw.io/trust",
-        contact: "agent_identity@payclaw.io",
-        principal_verified: false,
-        spend_available: false,
-        session_expired: true,
-        merchant: merchant || undefined,
-        message: msg,
-      };
+      return buildSessionExpiredResult(merchant, msg);
     }
 
     // Other errors (network, 5xx): fallback to local identity
@@ -309,8 +301,8 @@ export function formatIdentityResponse(r: IdentityResult): string {
     return r.message;
   }
 
-  if (r.session_expired && r.message) {
-    return `✗ SESSION EXPIRED\n\n  ${r.message}`;
+  if (r.session_expired) {
+    return `✗ SESSION EXPIRED\n\n  ${r.message || "Your session has expired. Please re-authenticate."}`;
   }
 
   if (r.status === "error") {

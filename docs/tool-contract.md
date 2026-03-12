@@ -94,13 +94,9 @@ Same tool signatures as mcp-server (synced since 0.7, PRD-3 parameters added in 
 
 **Input:** `{ verification_token: string, merchant: string, reason: "abandoned" | "merchant_didnt_ask" | "other" }` — report that the badge was not presented.
 
-### verify() (merchant-side)
+### Merchant-side verification
 
-**Import:** `import { verify } from '@payclaw/badge/verify'`
-
-**Input:** `verify(token: string, options?: VerifyOptions)` — ES256 JWT verification via JWKS.
-
-**Output:** `PayClawIdentity | null` — never throws. Returns `null` on any failure.
+Merchant-side token verification has moved to the [UCP extension spec](https://github.com/payclaw/ucp-agent-badge/tree/main/reference). It is no longer exported from `@payclaw/badge`.
 
 ---
 

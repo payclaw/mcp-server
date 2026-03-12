@@ -52,7 +52,7 @@ Enable with `PAYCLAW_EXTENDED_AUTH=true`:
 
 ```json
 "env": {
-  "PAYCLAW_API_URL": "https://payclaw.io",
+  "PAYCLAW_API_URL": "https://www.payclaw.io",
   "PAYCLAW_EXTENDED_AUTH": "true"
 }
 ```
@@ -81,7 +81,7 @@ PayClaw Badge is a [UCP (Universal Commerce Protocol)](https://ucp.dev) Credenti
 
 When your agent calls `payclaw_getAgentIdentity` with a `merchantUrl`, PayClaw fetches the merchant's manifest, checks for the PayClaw extension, and returns a `checkoutPatch` the agent merges into the checkout payload. If the merchant doesn't support UCP, a valid token is still returned — nothing breaks.
 
-Merchants verify badges locally with [`verify()` from `@payclaw/badge`](https://github.com/payclaw/ucp-agent-badge#merchant-verification) — 10 lines, zero dependencies, no API call.
+Merchants verify badges locally using JWKS published at `payclaw.io/.well-known/ucp` — standard ES256 signature verification, no API call to PayClaw. See the [reference implementation](https://github.com/payclaw/ucp-agent-badge/tree/main/reference) in the UCP extension spec.
 
 - Extension spec + schema: [github.com/payclaw/ucp-agent-badge](https://github.com/payclaw/ucp-agent-badge)
 - Merchant documentation: [payclaw.io/merchants](https://payclaw.io/merchants)
