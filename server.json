@@ -3,7 +3,7 @@
   "name": "io.github.payclaw/spend",
   "description": "Agents are not bots. kyaLabs proves it — then lets them pay. UCP Credential Provider: Badge + Spend on Visa rails. No API key required — device auth flow built in.",
   "repository": {
-    "url": "https://github.com/kyalabs/mcp-server",
+    "url": "https://github.com/payclaw/mcp-server",
     "source": "github"
   },
   "version": "0.8.0",

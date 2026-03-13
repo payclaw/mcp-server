@@ -148,7 +148,7 @@ async function enrichWithUCP(result: IdentityResult, merchantUrl: string): Promi
   }
 
   const checkoutPatch = {
-    "io.kyalabs.common.identity": {
+    [capability.extensionName]: {
       token: result.verification_token!,
       kid: BADGE_KID,
     },

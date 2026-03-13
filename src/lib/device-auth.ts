@@ -1,7 +1,7 @@
 // Canonical: badge-server | Synced: 0.7.3 | Do not edit in mcp-server
 import { storeConsentKey } from "./storage.js";
 
-const DEFAULT_API_URL = "https://kyalabs.io";
+const DEFAULT_API_URL = "https://www.kyalabs.io";
 const FETCH_TIMEOUT_MS = 10_000;
 
 function getBaseUrl(): string {

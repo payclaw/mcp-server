@@ -32,11 +32,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/kyalabs/mcp-server.git"
+    "url": "https://github.com/payclaw/mcp-server.git"
   },
   "homepage": "https://www.kyalabs.io",
   "bugs": {
-    "url": "https://github.com/kyalabs/mcp-server/issues"
+    "url": "https://github.com/payclaw/mcp-server/issues"
   },
   "engines": {
     "node": ">=20.0.0"

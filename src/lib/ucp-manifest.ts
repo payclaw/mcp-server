@@ -5,7 +5,11 @@
  * Never throws — returns null on any error.
  */
 
+/** Current namespace — preferred for new merchant manifests and checkoutPatch. */
 const EXTENSION_NAME = "io.kyalabs.common.identity";
+/** Legacy namespace — accepted during transition (merchants may still publish this). */
+const LEGACY_EXTENSION_NAME = "io.payclaw.common.identity";
+const EXTENSION_NAMES = [EXTENSION_NAME, LEGACY_EXTENSION_NAME];
 const FETCH_TIMEOUT_MS = 3000;
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -110,21 +114,28 @@ export async function fetchUCPManifest(merchantUrl: string): Promise<UCPManifest
 export interface BadgeCapability {
   version: string;
   required: boolean;
+  /** The namespace key found in the manifest (may be current or legacy). */
+  extensionName: string;
 }
 
 export function findBadgeCapability(manifest: UCPManifest): BadgeCapability | null {
   const caps = manifest.capabilities;
-  if (!caps || !(EXTENSION_NAME in caps)) return null;
+  if (!caps) return null;
 
-  const entry = caps[EXTENSION_NAME];
-  // Handle both array-wrapped and plain object forms
-  const cap: UCPCapability | undefined = Array.isArray(entry) ? entry[0] : entry;
-  if (!cap || typeof cap.version !== "string") return null;
-
-  return {
-    version: cap.version,
-    required: cap.config?.required === true,
-  };
+  // Try current namespace first, fall back to legacy
+  for (const name of EXTENSION_NAMES) {
+    if (!(name in caps)) continue;
+    const entry = caps[name];
+    // Handle both array-wrapped and plain object forms
+    const cap: UCPCapability | undefined = Array.isArray(entry) ? entry[0] : entry;
+    if (!cap || typeof cap.version !== "string") continue;
+    return {
+      version: cap.version,
+      required: cap.config?.required === true,
+      extensionName: name,
+    };
+  }
+  return null;
 }
 
 const COMPATIBLE_VERSIONS = ["2026-01-11"];
