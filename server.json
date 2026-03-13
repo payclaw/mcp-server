@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.payclaw/spend",
+  "name": "io.github.kyalabs-io/spend",
   "description": "Agents are not bots. kyaLabs proves it — then lets them pay. UCP Credential Provider: Badge + Spend on Visa rails. No API key required — device auth flow built in.",
   "repository": {
-    "url": "https://github.com/payclaw/mcp-server",
+    "url": "https://github.com/kyalabs-io/mcp-server",
     "source": "github"
   },
-  "version": "0.8.0",
+  "version": "1.0.0",
   "packages": [
     {
       "registryType": "npm",
-      "identifier": "@payclaw/mcp-server",
-      "version": "0.8.0",
+      "identifier": "@kyalabs/mcp-server",
+      "version": "1.0.0",
       "transport": {
         "type": "stdio"
       },

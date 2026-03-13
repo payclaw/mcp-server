@@ -1,6 +1,6 @@
 # kyaLabs MCP Tool Contract
 
-Formal input/output contract for MCP tools in `@payclaw/mcp-server` and `@payclaw/badge`. Update this doc when tool inputs, outputs, or auth requirements change.
+Formal input/output contract for MCP tools in `@kyalabs/mcp-server` and `@kyalabs/badge`. Update this doc when tool inputs, outputs, or auth requirements change.
 
 ---
 
@@ -12,7 +12,7 @@ Formal input/output contract for MCP tools in `@payclaw/mcp-server` and `@paycla
 
 ---
 
-## @payclaw/mcp-server (Badge + Spend)
+## @kyalabs/mcp-server (Badge + Spend)
 
 ### payclaw_getAgentIdentity
 
@@ -74,7 +74,7 @@ Formal input/output contract for MCP tools in `@payclaw/mcp-server` and `@paycla
 
 ---
 
-## @payclaw/badge (Badge only)
+## @kyalabs/badge (Badge only)
 
 Same tool signatures as mcp-server (synced since 0.7, PRD-3 parameters added in 0.8.0).
 
@@ -96,7 +96,7 @@ Same tool signatures as mcp-server (synced since 0.7, PRD-3 parameters added in 
 
 ### Merchant-side verification
 
-Merchant-side token verification has moved to the [UCP extension spec](https://github.com/kyalabs/ucp-agent-badge/tree/main/reference). It is no longer exported from `@payclaw/badge`.
+Merchant-side token verification has moved to the [UCP extension spec](https://github.com/kyalabs/ucp-agent-badge/tree/main/reference). It is no longer exported from `@kyalabs/badge`.
 
 ---
 

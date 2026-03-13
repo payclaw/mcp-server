@@ -16,7 +16,7 @@ Add to your MCP client config:
   "mcpServers": {
     "payclaw": {
       "command": "npx",
-      "args": ["-y", "@payclaw/mcp-server"],
+      "args": ["-y", "@kyalabs/mcp-server"],
       "env": {
         "PAYCLAW_API_KEY": "your_key_here",
         "PAYCLAW_API_URL": "https://www.kyalabs.io"
@@ -50,4 +50,4 @@ If you only need identity (no payment), use [payclaw-badge](https://clawhub.com/
 
 - [kyalabs.io](https://www.kyalabs.io)
 - [Trust & Verification](https://www.kyalabs.io/trust)
-- [npm: @payclaw/mcp-server](https://www.npmjs.com/package/@payclaw/mcp-server)
+- [npm: @kyalabs/mcp-server](https://www.npmjs.com/package/@kyalabs/mcp-server)

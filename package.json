@@ -1,12 +1,12 @@
 {
-  "name": "@payclaw/mcp-server",
-  "mcpName": "io.github.payclaw/spend",
-  "version": "0.8.2",
+  "name": "@kyalabs/mcp-server",
+  "mcpName": "io.github.kyalabs-io/spend",
+  "version": "1.0.0",
   "description": "Badge identity + virtual Visa cards for AI agents. Declare, pay, audit — on existing Visa rails. MCP-native.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "payclaw-mcp": "dist/index.js"
+    "kyalabs-mcp": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",
@@ -32,11 +32,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/payclaw/mcp-server.git"
+    "url": "https://github.com/kyalabs-io/mcp-server.git"
   },
   "homepage": "https://www.kyalabs.io",
   "bugs": {
-    "url": "https://github.com/payclaw/mcp-server/issues"
+    "url": "https://github.com/kyalabs-io/mcp-server/issues"
   },
   "engines": {
     "node": ">=20.0.0"

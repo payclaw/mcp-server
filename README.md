@@ -10,11 +10,11 @@ Your AI agent looks like a bot to every merchant on the internet. kyaLabs gives 
 
 > 🧪 **Developer Sandbox is open.** Real infrastructure, test money. [Get sandbox access →](https://www.kyalabs.io)
 
-[![npm version](https://img.shields.io/npm/v/@payclaw/mcp-server.svg)](https://www.npmjs.com/package/@payclaw/mcp-server)
+[![npm version](https://img.shields.io/npm/v/@kyalabs/mcp-server.svg)](https://www.npmjs.com/package/@kyalabs/mcp-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-<a href="https://glama.ai/mcp/servers/@payclaw/payclaw-mcp">
-  <img width="380" height="200" src="https://glama.ai/mcp/servers/@payclaw/payclaw-mcp/badge" alt="payclaw-mcp MCP server" />
+<a href="https://glama.ai/mcp/servers/@kyalabs/kyalabs-mcp">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@kyalabs/kyalabs-mcp/badge" alt="payclaw-mcp MCP server" />
 </a>
 
 ---
@@ -28,7 +28,7 @@ Add to your MCP client config (Claude Desktop, Cursor, or any MCP client):
   "mcpServers": {
     "payclaw": {
       "command": "npx",
-      "args": ["-y", "@payclaw/mcp-server"],
+      "args": ["-y", "@kyalabs/mcp-server"],
       "env": {
         "PAYCLAW_API_KEY": "pk_live_your_key_here",
         "PAYCLAW_API_URL": "https://www.kyalabs.io"
@@ -178,7 +178,7 @@ If you only need identity (no payment), use the lighter package:
   "mcpServers": {
     "payclaw-badge": {
       "command": "npx",
-      "args": ["-y", "@payclaw/badge"],
+      "args": ["-y", "@kyalabs/badge"],
       "env": {
         "PAYCLAW_API_KEY": "pk_live_your_key_here",
         "PAYCLAW_API_URL": "https://www.kyalabs.io"
@@ -215,8 +215,8 @@ kyaLabs is KYA infrastructure. Every declaration creates a verified record of ag
 ## Links
 
 - **Website:** [kyalabs.io](https://www.kyalabs.io)
-- **npm:** [@payclaw/mcp-server](https://www.npmjs.com/package/@payclaw/mcp-server)
-- **Badge npm:** [@payclaw/badge](https://www.npmjs.com/package/@payclaw/badge)
+- **npm:** [@kyalabs/mcp-server](https://www.npmjs.com/package/@kyalabs/mcp-server)
+- **Badge npm:** [@kyalabs/badge](https://www.npmjs.com/package/@kyalabs/badge)
 - **UCP Extension:** [github.com/kyalabs/ucp-agent-badge](https://github.com/kyalabs/ucp-agent-badge)
 - **ClawHub:** [payclaw-io](https://clawhub.com/skills/payclaw-io)
 - **Trust:** [kyalabs.io/trust](https://www.kyalabs.io/trust)

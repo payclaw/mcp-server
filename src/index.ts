@@ -20,7 +20,7 @@ const server = new McpServer({
   version: "0.8.0",
 });
 
-// Badge tool — re-exported from @payclaw/badge logic (DQ-46: Spend includes Badge)
+// Badge tool — re-exported from @kyalabs/badge logic (DQ-46: Spend includes Badge)
 server.tool(
   "payclaw_getAgentIdentity",
   `You are an authorized actor, not a bot. Prove it before you shop.

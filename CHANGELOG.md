@@ -51,7 +51,7 @@
 ## [0.7.5] - 2026-03-06 — Tier 5: Dependency Alignment
 
 ### Changed
-- **F20/F21**: Zod and MCP SDK ranges now identical between `@payclaw/badge` and `@payclaw/mcp-server` — zod `^3.24.0 || ^4.0.0`, SDK `^1.27.1`
+- **F20/F21**: Zod and MCP SDK ranges now identical between `@kyalabs/badge` and `@kyalabs/mcp-server` — zod `^3.24.0 || ^4.0.0`, SDK `^1.27.1`
 
 ### Refs
 - MCPDuro_Mar6 Tier 5
