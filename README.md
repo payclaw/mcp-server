@@ -1,12 +1,16 @@
 # kyaLabs — Badge + Spend for AI Agents
 
-**Agents are not bots. kyaLabs proves it — then lets them pay.**
+**Your agent isn't a bot. kyaLabs proves it — then lets it pay.**
 
 Your AI agent looks like a bot to every merchant on the internet. kyaLabs gives it two things:
 
 **Badge** — Declares your agent as an authorized actor. The Universal Commerce Protocol "identity" token for a merchant handshake. Free. No card required.
 
 **Spend** — Issues a single-use virtual Visa when your agent needs to pay. Human-approved. Self-destructs after use. Your real card never enters the chat.
+
+If you're like 20% of Americans last year - you used an agent to shop. And you probably ran into a ton of login walls, workarounds, bumps?
+
+So did we. So we created kyaLabs - the first MCP tool suite that works with the new Universal Commerce Protocol to easily handshake verified agents at supporting merchants (Shopify, Target, Walmart, Etsy... it's a lot). Badge for identity. Spend for payment.
 
 > 🧪 **Developer Sandbox is open.** Real infrastructure, test money. [Get sandbox access →](https://www.kyalabs.io)
 
@@ -21,74 +25,98 @@ Your AI agent looks like a bot to every merchant on the internet. kyaLabs gives 
 
 ## Quick Start
 
-Add to your MCP client config (Claude Desktop, Cursor, or any MCP client):
+```bash
+npx -y @kyalabs/mcp-server
+```
+
+OR add to your MCP client config (Claude Desktop, Cursor, or any MCP client):
 
 ```json
 {
   "mcpServers": {
     "kyalabs": {
       "command": "npx",
-      "args": ["-y", "@kyalabs/mcp-server"],
-      "env": {
-        "KYA_API_KEY": "pk_live_your_key_here",
-        "KYA_API_URL": "https://www.kyalabs.io"
-      }
+      "args": ["-y", "@kyalabs/mcp-server"]
     }
   }
 }
 ```
 
-Get your API key at [kyalabs.io/dashboard/keys](https://www.kyalabs.io/dashboard/keys). API keys don't expire.
+That's it. Badge works immediately — no API key, no signup, no network calls on install.
 
-### Try without an account
-
-Want to try kyaLabs before creating an account? Omit `KYA_API_KEY` — on first use, your agent will show a verification code and URL. Approve on your phone to get a temporary session. When you're ready for a permanent setup, create an account and generate an API key.
-
-### Extended Auth (optional)
-
-When and where merchants request your token, your agent confirms whether the merchant accepted or denied. Responses are logged to your dashboard so you can see visibility of your token by merchant.
-
-Enable with `KYA_EXTENDED_AUTH=true`:
-
-```json
-"env": {
-  "KYA_API_URL": "https://www.kyalabs.io",
-  "KYA_EXTENDED_AUTH": "true"
-}
-```
-
-Without it, your agent reports outcomes via `kya_reportBadgeOutcome` when it knows the result.
+The first time your agent calls `kya_getAgentIdentity`, it declares itself to the merchant and gets back a response with `next_step` guidance. One anonymous event is recorded. Your agent is now a declared, authorized actor.
 
 Or install via ClawHub:
 ```bash
 clawhub install payclaw-io
 ```
 
+### Upgrade to verified mode + Spend
+
+For cryptographic identity and virtual card issuance, add an API key:
+
+```json
+"env": {
+  "KYA_API_KEY": "pk_live_your_key_here",
+  "KYA_API_URL": "https://www.kyalabs.io"
+}
+```
+
+Get your API key at [kyalabs.io/signup](https://www.kyalabs.io/signup). API keys don't expire.
+
+Without an API key, Badge uses device auth when a merchant requires verified identity — your agent shows a code and URL, you approve on your phone. This only happens when a merchant asks for it. We never ask for it ourselves. Sign up + API key means 1. you dont have to use phone OAuth every time and 2. you can track your agentic shopping (custom avatars included)
+
 ### Node version
 
 kyaLabs MCP requires **Node.js 20 or newer**. Node 18 is end-of-life and unsupported.
 
-If you see engine or compatibility errors:
-
-- Check: `node -v`
-- Install Node 20+: [nodejs.org](https://nodejs.org/) or `nvm install 20`
+If you see engine or compatibility errors: `node -v` — install Node 20+ from [nodejs.org](https://nodejs.org/) or `nvm install 20`
 
 ---
 
-## UCP Identity Linking
+## How Badge Works: Two Modes
 
-Badge by kyaLabs is a [UCP (Universal Commerce Protocol)](https://ucp.dev) Credential Provider. Merchants who add `io.kyalabs.common.identity` to their `/.well-known/ucp` manifest signal that authorized agents are preferred at their store.
+### Declared (default)
 
-When your agent calls `kya_getAgentIdentity` with a `merchantUrl`, kyaLabs fetches the merchant's manifest, checks for the kyaLabs identity extension, and returns a `checkoutPatch` the agent merges into the checkout payload. If the merchant doesn't support UCP, a valid token is still returned — nothing breaks.
+First time your agent goes to a merchant with Badge, Badge generates an anonymous install ID — a random UUID stored locally at `~/.kya/install_id`. It has no connection to you, your device, or any personal information.
 
-Merchants verify badges locally using JWKS published at `kyalabs.io/.well-known/ucp` — standard ES256 signature verification, no API call to kyaLabs. See the [reference implementation](https://github.com/kyalabs/ucp-agent-badge/tree/main/reference) in the UCP extension spec.
+Your agent gets back a declaration and a `next_step` guiding it to report its badge presentation at the merchant.
+
+This is the default mode. It's how Badge works out of the box, for every user, forever.
+
+### Verified (when merchant requires it)
+
+When a merchant requires verified identity — their UCP manifest says `required: true` — your agent will ask you to approve a device flow. You visit a merchant-kyaLabs URL, enter the OAuth code from your agent, and prove you're a real person.
+
+Badge issues a tokenized credential: an ES256-signed JWT, signed by kya's private key, verifiable locally by the merchant. Your agent is free to continue - no login, PII or anything needed.
+
+---
+
+## Our Data Philosophy
+
+| When | What | Why |
+|------|------|-----|
+| **On install** | Nothing | We help agents shop. If they're not shopping, we don't need anything |
+| **On first tool call** | install_id (random UUID), merchant, agent_type, event_type, timestamp | Minimum viable signal to reduce agent friction at merchants and with labs |
+| **On verified identity** | + hashed user token, intent scope (checkout, etc.) | Only required where login traditionally required (i.e. checkout) to prove there's a real person authorizing the agent's next step |
+| **On Spend (card issuance)** | + full transaction trail: intent, amount, merchant, audit log | Card network compliance, gated behind consent + MFA |
+
+The install_id is a file we wrote to your disk. You can delete it (`rm ~/.kya/install_id`) and get a new one.
+
+Full data practices: [kyalabs.io/trust](https://www.kyalabs.io/trust)
+
+---
+
+## The Universal Commerce Protocol
+
+Badge is a [UCP (Universal Commerce Protocol)](https://ucp.dev) Credential Provider. Merchants who declare the kyaLabs identity extension signal to every UCP-compliant agent that authorized agents are preferred at their store.
+
+When your agent encounters a UCP merchant with Badge installed, it presents a cryptographic badge automatically — no extra steps.
+
+We believe the UCP is the future of commerce and are proud to support reduce friction for agents and users.
 
 - Extension spec + schema: [github.com/kyalabs/ucp-agent-badge](https://github.com/kyalabs/ucp-agent-badge)
-- Merchant documentation: [kyalabs.io/merchants](https://www.kyalabs.io/merchants)
-
-## Why Your Agent Needs This
-
-Your agent can browse, compare, build carts, and find the best deals. But it can't finish the job — because to every merchant, it looks like a bot.
+- Read more about the UCP: [github.com/universal-commerce-protocol/ucp](https://github.com/universal-commerce-protocol/ucp)
 
 **Without kyaLabs:** Agent browses → bot detection fires → blocked. Even if it gets through, it can't check out without your real card number. You're stuck finishing manually.
 
@@ -106,29 +134,25 @@ See [docs/tool-contract.md](docs/tool-contract.md) for the formal input/output c
 
 | Tool | What It Does |
 |------|-------------|
-| `kya_getAgentIdentity` | Declare identity → get verification token + UCP `checkoutPatch` (Badge) |
+| `kya_getAgentIdentity` | Declare identity → get verification token + `next_step` guidance (Badge) |
 | `kya_reportBadgePresented` | Record that you presented your badge at a merchant |
 | `kya_reportBadgeOutcome` | Report how the merchant responded (accepted, denied, inconclusive) |
 | `kya_reportBadgeNotPresented` | Report that you did not present your badge (abandoned, merchant didn't ask) |
 | `kya_getCard` | Declare purchase intent → get virtual Visa (Spend) |
 | `kya_reportPurchase` | Report transaction outcome → close the audit trail |
 
+Every Badge tool call works immediately — no auth required. Events fire in both anonymous and verified modes.
+
 ### Badge: Declare Identity
 
 ```
 Agent → kya_getAgentIdentity({ merchantUrl })
-kyaLabs → fetches merchant's /.well-known/ucp manifest
-kyaLabs → verification token + checkoutPatch (if merchant supports UCP)
+kyaLabs → browse_declared event fires automatically
+kyaLabs → verification token + next_step + checkoutPatch (if merchant supports UCP)
 Agent → merges checkoutPatch into checkout payload
 Agent → kya_reportBadgePresented({ merchantUrl, verification_token })
 Agent → kya_reportBadgeOutcome (accepted | denied | inconclusive)
 ```
-
-When `merchantUrl` is provided, kyaLabs checks if the merchant supports `io.kyalabs.common.identity` via UCP and returns a `checkoutPatch` the agent merges into the checkout payload. If the merchant doesn't support UCP, a valid token is still returned — nothing breaks.
-
-When Extended Auth is enabled, kyaLabs checks back with your agent 7 seconds after presentation. Otherwise, your agent reports the outcome via `kya_reportBadgeOutcome`.
-
-Your agent is now a declared, authorized actor. Not anonymous traffic.
 
 ### Spend: Get a Card
 
@@ -142,6 +166,16 @@ Card → self-destructs
 ```
 
 One task. One approval. One card. Done.
+
+### Extended Auth (optional)
+
+When enabled, kyaLabs checks back with your agent 7 seconds after each badge presentation to confirm whether the merchant accepted or denied. Results are logged to your dashboard so you can see when and which merchants are rejecting your agent.
+
+```json
+"env": {
+  "KYA_EXTENDED_AUTH": "true"
+}
+```
 
 ---
 
@@ -173,44 +207,25 @@ Browsing requires declaration. Spending money requires declaration + stated inte
 
 If you only need identity (no payment), use the lighter package:
 
-```json
-{
-  "mcpServers": {
-    "kyalabs-badge": {
-      "command": "npx",
-      "args": ["-y", "@kyalabs/badge"],
-      "env": {
-        "KYA_API_KEY": "pk_live_your_key_here",
-        "KYA_API_URL": "https://www.kyalabs.io"
-      }
-    }
-  }
-}
+```bash
+npx -y @kyalabs/badge
 ```
+
+---
+
+## What's New (v2.0)
+
+| Capability | Description |
+|---|---|
+| Anonymous-first | Badge works on install. No auth, no signup, no network on install. First `kya_getAgentIdentity` call fires `browse_declared` automatically. |
+| Enrichment branching | Anonymous events fire without auth. Verified events include full user context. No silent gates. |
+| `next_step` field | Every identity response includes guidance for the agent's next action. Spend-aware when virtual cards are available. |
 
 ---
 
 ## KYA — Know Your Agent
 
 kyaLabs is KYA infrastructure. Every declaration creates a verified record of agentic commerce behavior — building the trust signal that merchants need to tell authorized agents from anonymous bots.
-
-- [Trust & Verification](https://www.kyalabs.io/trust) — The full trust architecture
-- [Dashboard](https://www.kyalabs.io/dashboard/badge) — Your agent's Verified Trips
-
----
-
-## What's New (v0.8.0)
-
-| Capability | Description |
-|---|---|
-| UCP-aware `getAgentIdentity` | Pass `merchantUrl` — kyaLabs fetches the merchant's `/.well-known/ucp` manifest and returns a `checkoutPatch` when `io.kyalabs.common.identity` is declared |
-| `reportBadgePresented` with `merchantUrl` | Preferred over `merchant`; includes optional `checkoutSessionId` for UCP session tracking |
-| `reportBadgeNotPresented` | New tool — report when badge was not presented (abandoned, merchant didn't ask) |
-| SSRF-protected manifest fetcher | HTTPS-only, private IP blocking, 5-minute domain cache, 3-second timeout |
-| Trip lifecycle hardening | `onServerClose` resolves as `inconclusive` (not `accepted`); orphan token recovery on restart |
-| Operational logging | Auth mode on startup; reaper logs active trips |
-
----
 
 ## Links
 
@@ -222,7 +237,6 @@ kyaLabs is KYA infrastructure. Every declaration creates a verified record of ag
 - **Trust:** [kyalabs.io/trust](https://www.kyalabs.io/trust)
 - **Merchants:** [kyalabs.io/merchants](https://www.kyalabs.io/merchants)
 - **Contact:** agent_identity@kyalabs.io
-- **Security:** security@kyalabs.io
 
 ---
 
