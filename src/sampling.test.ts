@@ -20,6 +20,7 @@ import * as storage from "./lib/storage.js";
 vi.mock("./lib/storage.js", () => ({
   getStoredConsentKey: vi.fn(),
   storeConsentKey: vi.fn(),
+  getOrCreateInstallId: vi.fn(() => "inst-aaaa-bbbb-cccc-dddddddddddd"),
 }));
 
 describe("sampling", () => {
@@ -159,7 +160,7 @@ describe("sampling", () => {
       delete process.env.KYA_EXTENDED_AUTH;
     });
 
-    it("reportOutcome with no key -> no fetch, no throw, trip evicted", async () => {
+    it("reportOutcome with no key -> anonymous POST fires, trip evicted (v2.0 fix)", async () => {
       vi.useFakeTimers();
       mockFetch.mockClear();
       vi.mocked(storage.getStoredConsentKey).mockReturnValue(null);
@@ -178,10 +179,15 @@ describe("sampling", () => {
       await vi.runAllTimersAsync();
 
       expect(getActiveTrip("tok9")).toBeUndefined();
+      // v2.0: anonymous outcomes MUST fire (not silently dropped)
       const reportCalls = mockFetch.mock.calls.filter((c) =>
         String(c[0]).includes("/api/badge/report")
       );
-      expect(reportCalls).toHaveLength(0);
+      expect(reportCalls.length).toBeGreaterThanOrEqual(1);
+      const body = JSON.parse(reportCalls[0][1].body);
+      expect(body.install_id).toBe("inst-aaaa-bbbb-cccc-dddddddddddd");
+      expect(body.badge_version).toBe("2.0");
+      expect(body.event_type).toBe("trip_success");
       delete process.env.KYA_EXTENDED_AUTH;
     });
   });
@@ -300,6 +306,42 @@ describe("sampling", () => {
       const body = JSON.parse(reportCalls[0][1].body);
       expect(body.event_type).toBe("trip_success");
       expect(body.detail).toBe("agent_moved_to_new_merchant");
+    });
+  });
+
+  describe("reportOutcome — anonymous mode (v2.0)", () => {
+    it("anonymous resolveTrip POSTs without Authorization header", () => {
+      mockFetch.mockClear();
+      vi.mocked(storage.getStoredConsentKey).mockReturnValue(null);
+
+      onTripStarted("tok_anon", "shop.com");
+      onIdentityPresented("tok_anon", "shop.com");
+      // Resolve by starting new merchant trip
+      onTripStarted("tok_anon2", "other.com");
+
+      const reportCalls = mockFetch.mock.calls.filter((c) =>
+        String(c[0]).includes("/api/badge/report")
+      );
+      expect(reportCalls.length).toBeGreaterThanOrEqual(1);
+      const headers = reportCalls[0][1].headers;
+      expect(headers.Authorization).toBeUndefined();
+    });
+
+    it("anonymous reportOutcomeFromAgent includes install_id and badge_version", () => {
+      mockFetch.mockClear();
+      vi.mocked(storage.getStoredConsentKey).mockReturnValue(null);
+
+      onTripStarted("tok_anon3", "target.com");
+      onIdentityPresented("tok_anon3", "target.com");
+      reportOutcomeFromAgent("tok_anon3", "target.com", "accepted");
+
+      const reportCalls = mockFetch.mock.calls.filter((c) =>
+        String(c[0]).includes("/api/badge/report")
+      );
+      expect(reportCalls.length).toBeGreaterThanOrEqual(1);
+      const body = JSON.parse(reportCalls[0][1].body);
+      expect(body.install_id).toBe("inst-aaaa-bbbb-cccc-dddddddddddd");
+      expect(body.badge_version).toBe("2.0");
     });
   });
 });

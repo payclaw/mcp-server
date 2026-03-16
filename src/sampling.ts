@@ -1,12 +1,14 @@
-// Canonical: mcp-server | Synced: 0.7.6 | Do not edit in badge-server
+// Canonical: mcp-server | Synced: 2.0.0 | Do not edit in badge-server
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { parseResponse } from "./lib/parse-outcome.js";
-import { getStoredConsentKey } from "./lib/storage.js";
+import { getStoredConsentKey, getOrCreateInstallId } from "./lib/storage.js";
 import { getEnvExtendedAuth, getEnvApiUrl } from "./lib/env.js";
 
 const SAMPLING_DELAY_MS = 7000; // 7 seconds after identity_presented
 const SAMPLING_TIMEOUT_MS = 15000; // 15 seconds to respond
 const DEFAULT_API_URL = "https://www.kyalabs.io";
+const BADGE_VERSION = "2.0";
+const AGENT_TYPE = "mcp-server";
 
 export interface ActiveTrip {
   token: string;
@@ -185,29 +187,59 @@ async function reportOutcome(
 ): Promise<void> {
   const apiUrl = getEnvApiUrl() || DEFAULT_API_URL;
   const key = getStoredConsentKey();
-  if (!key) return;
-
+  const installId = getOrCreateInstallId();
   const eventType = outcome === "denied" ? "trip_failure" : "trip_success";
 
-  const res = await fetch(`${apiUrl}/api/badge/report`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      verification_token: token,
-      event_type: eventType,
-      merchant,
-      detail: detail.slice(0, 500),
-      outcome,
-    }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
+  try {
+    if (key) {
+      // Enriched payload: full auth, user-linked, includes install_id
+      const res = await fetch(`${apiUrl}/api/badge/report`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          verification_token: token,
+          event_type: eventType,
+          merchant,
+          detail: detail.slice(0, 500),
+          outcome,
+          install_id: installId,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        process.stderr.write(
+          `[BADGE] Report failed (${res.status}): ${body}\n`
+        );
+      }
+    } else {
+      // Anonymous payload: no auth header, install_id only
+      const res = await fetch(`${apiUrl}/api/badge/report`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          install_id: installId,
+          badge_version: BADGE_VERSION,
+          event_type: eventType,
+          merchant,
+          detail: detail.slice(0, 500),
+          outcome,
+          agent_type: AGENT_TYPE,
+          timestamp: Date.now(),
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        process.stderr.write(
+          `[BADGE] anonymous report failed (${res.status}): ${body}\n`
+        );
+      }
+    }
+  } catch (err) {
     process.stderr.write(
-      `[BADGE] Report failed (${res.status}): ${body}\n`
+      `[BADGE] reportOutcome error: ${err instanceof Error ? err.message : err}\n`
     );
   }
 }

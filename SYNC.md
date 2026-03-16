@@ -40,4 +40,10 @@ Shared files carry a header comment:
 
 ## Version
 
-Last sync: **0.7.3** (MCPDuro Mar 6, Tier 3)
+Last sync: **2.0.0** (Badge Redux v2.0, Mar 16)
+
+### v2.0.0 Changes
+- `storage.ts`: Added `getOrCreateInstallId()`, `_resetInstallIdCache()`
+- `report-badge.ts`: Removed `if (!key) return;` silent gates, added enrichment branching (anonymous + authenticated)
+- `sampling.ts`: Removed `if (!key) return;` in `reportOutcome()`, added anonymous enrichment branching
+- `getAgentIdentity.ts`: **Not synced** — edited independently in both repos. Added `browse_declared` auto-fire, `next_step` field, dedup
