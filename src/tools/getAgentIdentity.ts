@@ -1,7 +1,9 @@
-// Canonical: mcp-server (divergent) | v2.0 | Do not sync — edit independently
+// Canonical: mcp-server (divergent) | v2.1 | Do not sync — edit independently
+import crypto from "node:crypto";
 import * as api from "../api/client.js";
 import { getStoredConsentKey, getOrCreateInstallId } from "../lib/storage.js";
 import { getEnvApiKey, getEnvApiUrl } from "../lib/env.js";
+import { getAgentModel } from "../lib/agent-model.js";
 import { initiateDeviceAuth, pollForApproval } from "../lib/device-auth.js";
 import { fetchUCPManifest, findBadgeCapability, isVersionCompatible } from "../lib/ucp-manifest.js";
 
@@ -69,6 +71,10 @@ export interface IdentityResult {
   session_expired?: boolean;
   /** v2.0: Next action the agent should take */
   next_step?: string;
+  /** v2.1: Trip ID — links all events in a single shopping session */
+  trip_id?: string;
+  /** v2.1: Detected MCP client / agent model (e.g. "claude-desktop", "cursor") */
+  agent_model?: string;
 }
 
 function buildSessionExpiredResult(merchant?: string, message?: string): IdentityResult {
@@ -95,53 +101,45 @@ const AGENT_TYPE = "mcp-server";
 const NEXT_STEP_TEXT =
   "When visiting a merchant, report your badge presentation using kya_reportBadgePresented with the merchant domain and your verification token.";
 
-/** [EC-3] Dedup: only fire browse_declared once per merchant per process */
+/**
+ * v2.1: Dedup by trip_id (one browse_declared per trip, enforced by DB unique index).
+ * Process-level Set prevents duplicate fire within a single getAgentIdentity call
+ * (e.g. retry/race). Keyed on trip_id, not merchant — repeat merchant visits fire correctly.
+ */
 const browseFiredFor = new Set<string>();
 
 /**
  * [EC-4] Fire browse_declared event — fire-and-forget, on ALL paths.
  * [EC-5] Isolated try/catch — failure never affects identity response.
+ * v2.1: Includes trip_id to link browse_declared to subsequent events.
  */
-async function fireBrowseDeclared(merchant: string | undefined): Promise<void> {
-  const dedup = merchant || "__no_merchant__";
-  if (browseFiredFor.has(dedup)) return;
-  browseFiredFor.add(dedup);
+async function fireBrowseDeclared(merchant: string | undefined, tripId: string): Promise<void> {
+  if (browseFiredFor.has(tripId)) return;
+  browseFiredFor.add(tripId);
 
   try {
     const apiUrl = getEnvApiUrl() || DEFAULT_API_URL;
-    const key = getStoredConsentKey();
     const installId = getOrCreateInstallId();
 
-    if (key) {
-      await fetch(`${apiUrl}/api/badge/report`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${key}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          install_id: installId,
-          badge_version: BADGE_VERSION,
-          event_type: "browse_declared",
-          merchant: merchant || undefined,
-          agent_type: AGENT_TYPE,
-          timestamp: Date.now(),
-        }),
-      });
-    } else {
-      await fetch(`${apiUrl}/api/badge/report`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          install_id: installId,
-          badge_version: BADGE_VERSION,
-          event_type: "browse_declared",
-          merchant: merchant || undefined,
-          agent_type: AGENT_TYPE,
-          timestamp: Date.now(),
-        }),
-      });
-    }
+    const payload = {
+      install_id: installId,
+      badge_version: BADGE_VERSION,
+      event_type: "browse_declared",
+      merchant: merchant || undefined,
+      agent_type: AGENT_TYPE,
+      agent_model: getAgentModel(),
+      trip_id: tripId,
+      timestamp: Date.now(),
+    };
+
+    // Always use anonymous path — browse_declared fires before a verification
+    // token exists, so the authenticated path (which requires verification_token)
+    // would reject this payload. install_id_links bridges to user_id later.
+    await fetch(`${apiUrl}/api/badge/report`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
   } catch {
     // [EC-5] Fire-and-forget — identity response must not be affected
   }
@@ -159,11 +157,15 @@ export function _resetBrowseDeclaredCache(): void {
  * polls in background. On approval, stores key. Next call uses stored key.
  *
  * v2.0: Auto-fires browse_declared on first call per merchant.
+ * v2.1: Generates trip_id per call — links all events in a shopping session.
  */
 export async function getAgentIdentity(merchant?: string, merchantUrl?: string): Promise<IdentityResult> {
+  // v2.1: Generate trip_id for this shopping session
+  const tripId = crypto.randomUUID();
+
   // [EC-4] Fire browse_declared BEFORE returning, on ALL paths
   // [EC-5] Isolated — failure does not affect identity response
-  fireBrowseDeclared(merchant).catch(() => {});
+  fireBrowseDeclared(merchant, tripId).catch(() => {});
 
   const consentKey = getStoredConsentKey();
 
@@ -205,6 +207,10 @@ export async function getAgentIdentity(merchant?: string, merchantUrl?: string):
   } else {
     result.next_step = NEXT_STEP_TEXT;
   }
+
+  // v2.1: Attach trip_id + agent_model
+  result.trip_id = tripId;
+  result.agent_model = getAgentModel();
 
   return result;
 }

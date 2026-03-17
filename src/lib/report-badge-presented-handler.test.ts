@@ -21,13 +21,14 @@ describe("handleReportBadgePresented (kya_reportBadgePresented tool)", () => {
     vi.clearAllMocks();
   });
 
-  it("calls onIdentityPresented with verification_token and merchant", async () => {
+  it("calls onIdentityPresented with verification_token, merchant, and tripId", async () => {
     await handleReportBadgePresented("tok_abc123xyz", "merchant.com");
 
     expect(sampling.onIdentityPresented).toHaveBeenCalledTimes(1);
     expect(sampling.onIdentityPresented).toHaveBeenCalledWith(
       "tok_abc123xyz",
-      "merchant.com"
+      "merchant.com",
+      undefined
     );
   });
 
@@ -38,6 +39,7 @@ describe("handleReportBadgePresented (kya_reportBadgePresented tool)", () => {
     expect(reportBadge.reportBadgePresented).toHaveBeenCalledWith(
       "tok_abc123xyz",
       "merchant.com",
+      undefined,
       undefined,
       undefined
     );
@@ -63,20 +65,31 @@ describe("handleReportBadgePresented (kya_reportBadgePresented tool)", () => {
   it("passes context to reportBadgePresented when provided", async () => {
     await handleReportBadgePresented("tok", "m", "checkout");
 
-    expect(reportBadge.reportBadgePresented).toHaveBeenCalledWith("tok", "m", "checkout", undefined);
+    expect(reportBadge.reportBadgePresented).toHaveBeenCalledWith("tok", "m", "checkout", undefined, undefined);
   });
 
   it("passes checkoutSessionId to reportBadgePresented when provided", async () => {
     await handleReportBadgePresented("tok", "m", "checkout", "session-123");
 
-    expect(reportBadge.reportBadgePresented).toHaveBeenCalledWith("tok", "m", "checkout", "session-123");
+    expect(reportBadge.reportBadgePresented).toHaveBeenCalledWith("tok", "m", "checkout", "session-123", undefined);
   });
 
   it("returns response with empty merchant without throwing", async () => {
     const result = await handleReportBadgePresented("tok_xyz", "");
 
     expect(result.content).toHaveLength(2);
-    expect(sampling.onIdentityPresented).toHaveBeenCalledWith("tok_xyz", "");
-    expect(reportBadge.reportBadgePresented).toHaveBeenCalledWith("tok_xyz", "", undefined, undefined);
+    expect(sampling.onIdentityPresented).toHaveBeenCalledWith("tok_xyz", "", undefined);
+    expect(reportBadge.reportBadgePresented).toHaveBeenCalledWith("tok_xyz", "", undefined, undefined, undefined);
+  });
+
+  it("passes tripId to both onIdentityPresented and reportBadgePresented (v2.1)", async () => {
+    await handleReportBadgePresented("tok", "m", "arrival", undefined, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+
+    expect(sampling.onIdentityPresented).toHaveBeenCalledWith(
+      "tok", "m", "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    );
+    expect(reportBadge.reportBadgePresented).toHaveBeenCalledWith(
+      "tok", "m", "arrival", undefined, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
+    );
   });
 });

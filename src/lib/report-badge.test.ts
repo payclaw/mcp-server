@@ -134,7 +134,7 @@ describe("reportBadgePresented", () => {
     expect(body.event_type).toBe("identity_presented");
     expect(body.merchant).toBe("amazon.com");
     expect(typeof body.timestamp).toBe("number");
-    expect(body.agent_type).toBe("badge-mcp");
+    expect(body.agent_type).toBe("mcp-server");
   });
 
   it("anonymous mode includes presentation_context when provided", async () => {

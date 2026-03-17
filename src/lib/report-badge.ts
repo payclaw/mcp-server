@@ -1,22 +1,24 @@
-// Canonical: badge-server | Synced: 2.0.0 | Do not edit in mcp-server
+// Synced from badge-server: 2.1.0 | AGENT_TYPE diverges (mcp-server, not badge-mcp)
 /**
  * POST badge events to /api/badge/report.
  * v2.0: Enrichment branching — anonymous payload if no key, enriched if key.
- * Removes the `if (!key) return;` silent gate that caused 2,500 installs → 0 events.
+ * v2.1: trip_id propagation — links all events in a shopping session.
  */
 
 import { getStoredConsentKey, getOrCreateInstallId } from "./storage.js";
 import { getEnvApiUrl } from "./env.js";
+import { getAgentModel } from "./agent-model.js";
 
 const DEFAULT_API_URL = "https://www.kyalabs.io";
 const BADGE_VERSION = "2.0";
-const AGENT_TYPE = "badge-mcp";
+const AGENT_TYPE = "mcp-server";
 
 export async function reportBadgePresented(
   verificationToken: string,
   merchant: string,
   context?: "arrival" | "addtocart" | "checkout" | "other",
-  checkoutSessionId?: string
+  checkoutSessionId?: string,
+  tripId?: string
 ): Promise<void> {
   const apiUrl = getEnvApiUrl() || DEFAULT_API_URL;
   const key = getStoredConsentKey();
@@ -38,6 +40,7 @@ export async function reportBadgePresented(
           install_id: installId,
           ...(context && { presentation_context: context }),
           ...(checkoutSessionId && { checkout_session_id: checkoutSessionId }),
+          ...(tripId && { trip_id: tripId }),
         }),
       });
       if (!res.ok) {
@@ -57,8 +60,10 @@ export async function reportBadgePresented(
           event_type: "identity_presented",
           merchant,
           agent_type: AGENT_TYPE,
+          agent_model: getAgentModel(),
           timestamp: Date.now(),
           ...(context && { presentation_context: context }),
+          ...(tripId && { trip_id: tripId }),
         }),
       });
       if (!res.ok) {
@@ -79,7 +84,8 @@ export async function reportBadgePresented(
 export async function reportBadgeNotPresented(
   verificationToken: string,
   merchant: string,
-  reason: "abandoned" | "merchant_didnt_ask" | "other"
+  reason: "abandoned" | "merchant_didnt_ask" | "other",
+  tripId?: string
 ): Promise<void> {
   const apiUrl = getEnvApiUrl() || DEFAULT_API_URL;
   const key = getStoredConsentKey();
@@ -100,6 +106,7 @@ export async function reportBadgeNotPresented(
           merchant,
           reason,
           install_id: installId,
+          ...(tripId && { trip_id: tripId }),
         }),
       });
       if (!res.ok) {
@@ -120,7 +127,9 @@ export async function reportBadgeNotPresented(
           merchant,
           reason,
           agent_type: AGENT_TYPE,
+          agent_model: getAgentModel(),
           timestamp: Date.now(),
+          ...(tripId && { trip_id: tripId }),
         }),
       });
       if (!res.ok) {

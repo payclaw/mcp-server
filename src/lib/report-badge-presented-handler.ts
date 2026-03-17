@@ -1,4 +1,4 @@
-// Canonical: badge-server | Synced: PRD-3 | Do not edit in mcp-server
+// Canonical: badge-server | Synced: 2.1.0 | Do not edit in mcp-server
 /**
  * Handler for kya_reportBadgePresented tool.
  * Extracted for testability (BUG-01.1 integration tests).
@@ -17,10 +17,11 @@ export async function handleReportBadgePresented(
   verification_token: string,
   merchant: string,
   context?: "arrival" | "addtocart" | "checkout" | "other",
-  checkoutSessionId?: string
+  checkoutSessionId?: string,
+  tripId?: string
 ): Promise<{ content: Array<{ type: "text"; text: string }> }> {
-  onIdentityPresented(verification_token, merchant);
-  await reportBadgePresented(verification_token, merchant, context, checkoutSessionId);
+  onIdentityPresented(verification_token, merchant, tripId);
+  await reportBadgePresented(verification_token, merchant, context, checkoutSessionId, tripId);
   return {
     content: [
       {

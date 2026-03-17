@@ -1,8 +1,9 @@
-// Canonical: mcp-server | Synced: 2.0.0 | Do not edit in badge-server
+// Canonical: mcp-server | Synced: 2.1.0 | Do not edit in badge-server
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { parseResponse } from "./lib/parse-outcome.js";
 import { getStoredConsentKey, getOrCreateInstallId } from "./lib/storage.js";
 import { getEnvExtendedAuth, getEnvApiUrl } from "./lib/env.js";
+import { getAgentModel } from "./lib/agent-model.js";
 
 const SAMPLING_DELAY_MS = 7000; // 7 seconds after identity_presented
 const SAMPLING_TIMEOUT_MS = 15000; // 15 seconds to respond
@@ -18,6 +19,8 @@ export interface ActiveTrip {
   presentedAt?: number;
   outcome?: string;
   samplingTimer?: ReturnType<typeof setTimeout>;
+  /** v2.1: Trip ID linking all events in a shopping session */
+  tripId?: string;
 }
 
 // In-memory state — max 100 active trips
@@ -46,7 +49,7 @@ export function initSampling(server: Server): void {
   }
 }
 
-export function onTripStarted(token: string, merchant: string): void {
+export function onTripStarted(token: string, merchant: string, tripId?: string): void {
   // Resolve any existing trip for a different merchant (agent moved on = success)
   for (const [key, trip] of activeTrips) {
     if (trip.presented && !trip.outcome && trip.merchant !== merchant) {
@@ -69,10 +72,11 @@ export function onTripStarted(token: string, merchant: string): void {
     merchant,
     startedAt: Date.now(),
     presented: false,
+    tripId,
   });
 }
 
-export function onIdentityPresented(token: string, merchant: string): void {
+export function onIdentityPresented(token: string, merchant: string, tripId?: string): void {
   const trip = activeTrips.get(token);
   if (!trip) {
     // Trip not tracked (started before server restart) — create it
@@ -82,10 +86,12 @@ export function onIdentityPresented(token: string, merchant: string): void {
       startedAt: Date.now(),
       presented: true,
       presentedAt: Date.now(),
+      tripId,
     });
   } else {
     trip.presented = true;
     trip.presentedAt = Date.now();
+    if (tripId) trip.tripId = tripId;
   }
 
   // Schedule sampling after delay
@@ -168,8 +174,8 @@ function resolveTrip(token: string, outcome: string, detail: string): void {
   if (trip.samplingTimer) clearTimeout(trip.samplingTimer);
   trip.outcome = outcome;
 
-  // Report to API
-  reportOutcome(token, outcome, trip.merchant, detail).catch((err) => {
+  // Report to API — include trip_id when available
+  reportOutcome(token, outcome, trip.merchant, detail, trip.tripId).catch((err) => {
     process.stderr.write(
       `[BADGE] Failed to report outcome: ${err}\n`
     );
@@ -183,7 +189,8 @@ async function reportOutcome(
   token: string,
   outcome: string,
   merchant: string,
-  detail: string
+  detail: string,
+  tripId?: string
 ): Promise<void> {
   const apiUrl = getEnvApiUrl() || DEFAULT_API_URL;
   const key = getStoredConsentKey();
@@ -206,6 +213,7 @@ async function reportOutcome(
           detail: detail.slice(0, 500),
           outcome,
           install_id: installId,
+          ...(tripId && { trip_id: tripId }),
         }),
       });
       if (!res.ok) {
@@ -227,7 +235,9 @@ async function reportOutcome(
           detail: detail.slice(0, 500),
           outcome,
           agent_type: AGENT_TYPE,
+          agent_model: getAgentModel(),
           timestamp: Date.now(),
+          ...(tripId && { trip_id: tripId }),
         }),
       });
       if (!res.ok) {
@@ -302,9 +312,12 @@ export function getActiveTrip(token: string): ActiveTrip | undefined {
 export function reportOutcomeFromAgent(
   token: string,
   merchant: string,
-  outcome: "accepted" | "denied" | "inconclusive"
+  outcome: "accepted" | "denied" | "inconclusive",
+  tripId?: string
 ): void {
   if (activeTrips.has(token)) {
+    // Attach trip_id to the active trip before resolving
+    if (tripId) activeTrips.get(token)!.tripId = tripId;
     resolveTrip(token, outcome, "agent_reported");
     return;
   }
@@ -319,11 +332,12 @@ export function reportOutcomeFromAgent(
     }
   }
   if (matchCount === 1 && matchToken) {
+    if (tripId) activeTrips.get(matchToken)!.tripId = tripId;
     resolveTrip(matchToken, outcome, "agent_reported");
     return;
   }
   // No matching trip — still report to API so outcome is recorded
-  reportOutcome(token, outcome, merchant, "agent_reported").catch((err) => {
+  reportOutcome(token, outcome, merchant, "agent_reported", tripId).catch((err) => {
     process.stderr.write(`[BADGE] Failed to report outcome: ${err}\n`);
   });
 }
