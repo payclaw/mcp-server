@@ -213,10 +213,12 @@ npx @kyalabs/badge
 
 ---
 
-## What's New (v2.0)
+## What's New (v2.3)
 
 | Capability | Description |
 |---|---|
+| `assurance_level` | Every trip now carries a trust score (`starter` → `elite`) sourced from token introspection. Visible in your dashboard and included in all trip outcome events. |
+| Merchant signal awareness | `kya_getAgentIdentity` now detects whether a merchant has active kya signal infrastructure (`window.__kya_commerce`, meta tags, llms.txt). Returned as `merchant_signals` in the identity result. |
 | Anonymous-first | Badge works on install. No auth, no signup, no network on install. First `kya_getAgentIdentity` call fires `browse_declared` automatically. |
 | Enrichment branching | Anonymous events fire without auth. Verified events include full user context. No silent gates. |
 | `next_step` field | Every identity response includes guidance for the agent's next action. Spend-aware when virtual cards are available. |
