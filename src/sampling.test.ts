@@ -342,8 +342,8 @@ describe("sampling", () => {
       onIdentityPresented("t_report", "shop.com");
       reportOutcomeFromAgent("t_report", "shop.com", "accepted");
 
-      const reportCalls = mockFetch.mock.calls.filter(([u]: [string]) =>
-        String(u).includes("/api/badge/report")
+      const reportCalls = mockFetch.mock.calls.filter((args) =>
+        String(args[0]).includes("/api/badge/report")
       );
       expect(reportCalls.length).toBeGreaterThan(0);
       const body = JSON.parse(reportCalls[0][1].body as string);
@@ -359,8 +359,8 @@ describe("sampling", () => {
       onIdentityPresented("t_auth", "shop.com");
       reportOutcomeFromAgent("t_auth", "shop.com", "accepted");
 
-      const reportCalls = mockFetch.mock.calls.filter(([u]: [string]) =>
-        String(u).includes("/api/badge/report")
+      const reportCalls = mockFetch.mock.calls.filter((args) =>
+        String(args[0]).includes("/api/badge/report")
       );
       expect(reportCalls.length).toBeGreaterThan(0);
       const body = JSON.parse(reportCalls[0][1].body as string);
