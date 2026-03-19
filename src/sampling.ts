@@ -56,7 +56,7 @@ export function onTripStarted(token: string, merchant: string, tripId?: string):
   // Resolve any existing trip for a different merchant (agent moved on = success)
   for (const [key, trip] of activeTrips) {
     if (trip.presented && !trip.outcome && trip.merchant !== merchant) {
-      resolveTrip(key, "accepted", "agent_moved_to_new_merchant");
+      resolveTrip(key, "not_denied", "agent_moved_to_new_merchant");
     }
   }
 
@@ -66,7 +66,7 @@ export function onTripStarted(token: string, merchant: string, tripId?: string):
       (a, b) => a[1].startedAt - b[1].startedAt
     )[0];
     if (oldest) {
-      resolveTrip(oldest[0], "inconclusive", "evicted_capacity");
+      resolveTrip(oldest[0], "unparseable", "evicted_capacity");
     }
   }
 
@@ -133,7 +133,7 @@ async function sampleAgent(token: string, merchant: string): Promise<void> {
     ]);
 
     if (!result) {
-      resolveTrip(token, "inconclusive", "sampling_timeout");
+      resolveTrip(token, "unparseable", "sampling_timeout");
       return;
     }
 
@@ -157,7 +157,7 @@ async function sampleAgent(token: string, merchant: string): Promise<void> {
     const msg = err instanceof Error ? err.message : String(err);
 
     if (msg.includes("sampling_timeout")) {
-      resolveTrip(token, "inconclusive", "sampling_timeout");
+      resolveTrip(token, "unparseable", "sampling_timeout");
     } else if (
       msg.includes("not supported") ||
       msg.includes("Method not found") ||
@@ -166,7 +166,7 @@ async function sampleAgent(token: string, merchant: string): Promise<void> {
       samplingAvailable = false;
       resolveTrip(token, "no_sampling", msg);
     } else {
-      resolveTrip(token, "inconclusive", msg);
+      resolveTrip(token, "unparseable", msg);
     }
   }
 }
@@ -271,7 +271,7 @@ function reapStaleTrips(): void {
       const ageMin = Math.round((now - trip.startedAt) / 60000);
       if (trip.presented && !trip.outcome) {
         process.stderr.write(`[kyaLabs] Reaped stale trip: ${token.slice(0, 10)}** (${trip.merchant.slice(0, 64)}, age: ${ageMin}m)\n`);
-        resolveTrip(token, "inconclusive", "stale_trip_reaped");
+        resolveTrip(token, "unparseable", "stale_trip_reaped");
         reaped++;
       } else {
         activeTrips.delete(token);
@@ -290,7 +290,7 @@ export function onServerClose(): void {
   for (const [token, trip] of activeTrips) {
     if (trip.presented && !trip.outcome) {
       // Agent disconnected — outcome unknown
-      resolveTrip(token, "inconclusive", "server_close");
+      resolveTrip(token, "unparseable", "server_close");
     }
   }
   activeTrips.clear();
