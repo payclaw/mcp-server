@@ -6,12 +6,12 @@ describe("parseResponse", () => {
     expect(parseResponse("yes")).toBe("denied");
   });
 
-  it('returns "accepted" for "no"', () => {
-    expect(parseResponse("no")).toBe("accepted");
+  it('returns "not_denied" for "no"', () => {
+    expect(parseResponse("no")).toBe("not_denied");
   });
 
-  it('returns "accepted" for "NO"', () => {
-    expect(parseResponse("NO")).toBe("accepted");
+  it('returns "not_denied" for "NO"', () => {
+    expect(parseResponse("NO")).toBe("not_denied");
   });
 
   it('returns "denied" for "blocked"', () => {
@@ -22,31 +22,31 @@ describe("parseResponse", () => {
     expect(parseResponse("403")).toBe("denied");
   });
 
-  it('returns "accepted" for "no, I was not denied"', () => {
-    expect(parseResponse("no, I was not denied")).toBe("accepted");
+  it('returns "not_denied" for "no, I was not denied"', () => {
+    expect(parseResponse("no, I was not denied")).toBe("not_denied");
   });
 
-  it('returns "inconclusive" for empty string', () => {
-    expect(parseResponse("")).toBe("inconclusive");
+  it('returns "unparseable" for empty string', () => {
+    expect(parseResponse("")).toBe("unparseable");
   });
 
-  it('returns "inconclusive" for gibberish', () => {
-    expect(parseResponse("maybe")).toBe("inconclusive");
+  it('returns "unparseable" for gibberish', () => {
+    expect(parseResponse("maybe")).toBe("unparseable");
   });
 
-  it('returns "accepted" for "no."', () => {
-    expect(parseResponse("no.")).toBe("accepted");
+  it('returns "not_denied" for "no."', () => {
+    expect(parseResponse("no.")).toBe("not_denied");
   });
 
-  it('returns "accepted" for "no,"', () => {
-    expect(parseResponse("no,")).toBe("accepted");
+  it('returns "not_denied" for "no,"', () => {
+    expect(parseResponse("no,")).toBe("not_denied");
   });
 
   it('returns "denied" for contradictory response "no, I was blocked"', () => {
     expect(parseResponse("no, I was blocked")).toBe("denied");
   });
 
-  it('returns "inconclusive" for "yesterday"', () => {
-    expect(parseResponse("yesterday")).toBe("inconclusive");
+  it('returns "unparseable" for "yesterday"', () => {
+    expect(parseResponse("yesterday")).toBe("unparseable");
   });
 });

@@ -188,7 +188,7 @@ describe("sampling", () => {
       const body = JSON.parse(reportCalls[0][1].body);
       expect(body.install_id).toBe("inst-aaaa-bbbb-cccc-dddddddddddd");
       expect(body.badge_version).toBe("2.3");
-      expect(body.event_type).toBe("trip_success");
+      expect(body.event_type).toBe("sampling_complete");
       delete process.env.KYA_EXTENDED_AUTH;
     });
   });
@@ -215,7 +215,7 @@ describe("sampling", () => {
       onTripStarted("tok_b", "target.com");
       onIdentityPresented("tok_b", "target.com");
 
-      reportOutcomeFromAgent("tok_b", "target.com", "accepted");
+      reportOutcomeFromAgent("tok_b", "target.com", "not_denied");
       expect(getActiveTrip("tok_b")).toBeUndefined();
     });
 
@@ -256,7 +256,7 @@ describe("sampling", () => {
       onTripStarted("tok_a", "amazon.com");
       onIdentityPresented("tok_a", "amazon.com");
 
-      reportOutcomeFromAgent("unknown_tok", "amazon.com", "accepted");
+      reportOutcomeFromAgent("unknown_tok", "amazon.com", "not_denied");
       expect(getActiveTrip("tok_a")).toBeUndefined();
     });
 
@@ -284,7 +284,7 @@ describe("sampling", () => {
       onIdentityPresented("tok_b", "amazon.com");
 
       mockFetch.mockClear();
-      reportOutcomeFromAgent("unknown_tok", "amazon.com", "accepted");
+      reportOutcomeFromAgent("unknown_tok", "amazon.com", "not_denied");
 
       // Should NOT resolve either trip (ambiguous) — falls through to direct POST
       expect(getActiveTrip("tok_a")).toBeDefined();
@@ -305,7 +305,7 @@ describe("sampling", () => {
       );
       expect(reportCalls.length).toBeGreaterThanOrEqual(1);
       const body = JSON.parse(reportCalls[0][1].body);
-      expect(body.event_type).toBe("trip_success");
+      expect(body.event_type).toBe("sampling_complete");
       expect(body.detail).toBe("agent_moved_to_new_merchant");
     });
   });
@@ -340,7 +340,7 @@ describe("sampling", () => {
       registerTripAssuranceLevel("t_report", "elite");
       onTripStarted("t_report", "shop.com");
       onIdentityPresented("t_report", "shop.com");
-      reportOutcomeFromAgent("t_report", "shop.com", "accepted");
+      reportOutcomeFromAgent("t_report", "shop.com", "not_denied");
 
       const reportCalls = mockFetch.mock.calls.filter((args) =>
         String(args[0]).includes("/api/badge/report")
@@ -357,7 +357,7 @@ describe("sampling", () => {
       registerTripAssuranceLevel("t_auth", "regular");
       onTripStarted("t_auth", "shop.com");
       onIdentityPresented("t_auth", "shop.com");
-      reportOutcomeFromAgent("t_auth", "shop.com", "accepted");
+      reportOutcomeFromAgent("t_auth", "shop.com", "not_denied");
 
       const reportCalls = mockFetch.mock.calls.filter((args) =>
         String(args[0]).includes("/api/badge/report")
@@ -372,7 +372,7 @@ describe("sampling", () => {
       registerTripAssuranceLevel("t_clear", "starter");
       onTripStarted("t_clear", "merchant.com");
       onIdentityPresented("t_clear", "merchant.com");
-      reportOutcomeFromAgent("t_clear", "merchant.com", "accepted");
+      reportOutcomeFromAgent("t_clear", "merchant.com", "not_denied");
 
       // New trip same token — store should be cleared
       onTripStarted("t_clear", "merchant.com");
@@ -411,7 +411,7 @@ describe("sampling", () => {
 
       onTripStarted("tok_anon3", "target.com");
       onIdentityPresented("tok_anon3", "target.com");
-      reportOutcomeFromAgent("tok_anon3", "target.com", "accepted");
+      reportOutcomeFromAgent("tok_anon3", "target.com", "not_denied");
 
       const reportCalls = mockFetch.mock.calls.filter((c) =>
         String(c[0]).includes("/api/badge/report")
