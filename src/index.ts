@@ -4,7 +4,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { getCard, formatCardResponse } from "./tools/getCard.js";
 import { reportPurchase } from "./tools/reportPurchase.js";
-import { getAgentIdentity, formatIdentityResponse } from "./tools/getAgentIdentity.js";
+import { getAgentIdentity, formatIdentityResponse, flushPendingBrowse } from "./tools/getAgentIdentity.js";
 import {
   initSampling,
   onTripStarted,
@@ -224,8 +224,8 @@ async function main() {
   // v2.1: Detect agent model from MCP client handshake
   initAgentModel(server.server);
 
-  process.on("SIGINT", () => { onServerClose(); process.exit(0); });
-  process.on("SIGTERM", () => { onServerClose(); process.exit(0); });
+  process.on("SIGINT", async () => { onServerClose(); await flushPendingBrowse(); process.exit(0); });
+  process.on("SIGTERM", async () => { onServerClose(); await flushPendingBrowse(); process.exit(0); });
 
   process.stderr.write("kyaLabs MCP server running on stdio\n");
   if (process.env.VITEST !== "true") {

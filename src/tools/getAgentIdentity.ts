@@ -119,9 +119,14 @@ async function fireSignalContextReceived(
   apiUrl: string,
   consentKey: string | null
 ): Promise<void> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
   try {
+    const fetchOpts = { signal: controller.signal };
+    let res: Response;
     if (consentKey) {
-      await fetch(`${apiUrl}/api/badge/report`, {
+      res = await fetch(`${apiUrl}/api/badge/report`, {
+        ...fetchOpts,
         method: "POST",
         headers: {
           Authorization: `Bearer ${consentKey}`,
@@ -136,7 +141,8 @@ async function fireSignalContextReceived(
         }),
       });
     } else {
-      await fetch(`${apiUrl}/api/badge/report`, {
+      res = await fetch(`${apiUrl}/api/badge/report`, {
+        ...fetchOpts,
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -151,8 +157,15 @@ async function fireSignalContextReceived(
         }),
       });
     }
-  } catch {
+    if (!res.ok) {
+      process.stderr.write(`[badge] signal_context_received failed: HTTP ${res.status}\n`);
+    }
+  } catch (err) {
     // Fire-and-forget — never affect identity response
+    const msg = err instanceof Error ? err.message : String(err);
+    process.stderr.write(`[badge] signal_context_received failed: ${msg}\n`);
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -170,6 +183,17 @@ const NEXT_STEP_TEXT =
  * (e.g. retry/race). Keyed on trip_id, not merchant — repeat merchant visits fire correctly.
  */
 const browseFiredFor = new Set<string>();
+
+/** Track in-flight browse_declared fetches so we can flush before exit. */
+let pendingBrowse: Promise<void> | null = null;
+
+/**
+ * Wait for any in-flight browse_declared to complete.
+ * Call from SIGINT/SIGTERM handler or MCP server shutdown to avoid data loss.
+ */
+export async function flushPendingBrowse(): Promise<void> {
+  if (pendingBrowse) await pendingBrowse;
+}
 
 /**
  * [EC-4] Fire browse_declared event — fire-and-forget, on ALL paths.
@@ -198,13 +222,25 @@ async function fireBrowseDeclared(merchant: string | undefined, tripId: string):
     // Always use anonymous path — browse_declared fires before a verification
     // token exists, so the authenticated path (which requires verification_token)
     // would reject this payload. install_id_links bridges to user_id later.
-    await fetch(`${apiUrl}/api/badge/report`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-  } catch {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    try {
+      const res = await fetch(`${apiUrl}/api/badge/report`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        process.stderr.write(`[badge] browse_declared failed: HTTP ${res.status}\n`);
+      }
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch (err) {
     // [EC-5] Fire-and-forget — identity response must not be affected
+    const msg = err instanceof Error ? err.message : String(err);
+    process.stderr.write(`[badge] browse_declared failed: ${msg}\n`);
   }
 }
 
@@ -228,7 +264,8 @@ export async function getAgentIdentity(merchant?: string, merchantUrl?: string):
 
   // [EC-4] Fire browse_declared BEFORE returning, on ALL paths
   // [EC-5] Isolated — failure does not affect identity response
-  fireBrowseDeclared(merchant, tripId).catch(() => {});
+  pendingBrowse = fireBrowseDeclared(merchant, tripId).catch(() => {});
+  pendingBrowse.then(() => { pendingBrowse = null; });
 
   const consentKey = getStoredConsentKey();
 
