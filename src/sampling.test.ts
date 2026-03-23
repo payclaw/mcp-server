@@ -187,7 +187,7 @@ describe("sampling", () => {
       expect(reportCalls.length).toBeGreaterThanOrEqual(1);
       const body = JSON.parse(reportCalls[0][1].body);
       expect(body.install_id).toBe("inst-aaaa-bbbb-cccc-dddddddddddd");
-      expect(body.badge_version).toBe("2.3");
+      expect(body.badge_version).toBe("2.4");
       expect(body.event_type).toBe("sampling_complete");
       delete process.env.KYA_EXTENDED_AUTH;
     });
@@ -419,7 +419,7 @@ describe("sampling", () => {
       expect(reportCalls.length).toBeGreaterThanOrEqual(1);
       const body = JSON.parse(reportCalls[0][1].body);
       expect(body.install_id).toBe("inst-aaaa-bbbb-cccc-dddddddddddd");
-      expect(body.badge_version).toBe("2.3");
+      expect(body.badge_version).toBe("2.4");
     });
   });
 });
