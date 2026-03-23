@@ -130,7 +130,7 @@ describe("reportBadgePresented", () => {
 
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
     expect(body.install_id).toBe("inst-aaaa-bbbb-cccc-dddddddddddd");
-    expect(body.badge_version).toBe("2.3");
+    expect(body.badge_version).toBe("2.4");
     expect(body.event_type).toBe("identity_presented");
     expect(body.merchant).toBe("amazon.com");
     expect(typeof body.timestamp).toBe("number");
@@ -250,7 +250,7 @@ describe("reportBadgeNotPresented", () => {
 
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
     expect(body.install_id).toBe("inst-aaaa-bbbb-cccc-dddddddddddd");
-    expect(body.badge_version).toBe("2.3");
+    expect(body.badge_version).toBe("2.4");
     expect(body.event_type).toBe("badge_not_presented");
     expect(body.reason).toBe("merchant_didnt_ask");
     expect(body.merchant).toBe("target.com");
