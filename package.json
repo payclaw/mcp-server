@@ -15,7 +15,7 @@
     "test": "vitest",
     "lint": "eslint src/",
     "format": "prettier --write src/",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "bash scripts/prepublish-check.sh"
   },
   "keywords": [
     "mcp",
