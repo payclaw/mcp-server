@@ -1,0 +1,22 @@
+# Dependabot configuration — KYA-30
+# Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "America/Chicago"
+    open-pull-requests-limit: 10
+    versioning-strategy: increase
+    labels:
+      - "dependencies"
+    groups:
+      # One PR for all non-major bumps — keeps the queue manageable
+      patch-and-minor:
+        update-types:
+          - "minor"
+          - "patch"
+      # Major versions get individual PRs (breaking changes need eyes)
