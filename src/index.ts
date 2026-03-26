@@ -9,16 +9,16 @@ import {
   initSampling,
   onTripStarted,
   onServerClose,
-  reportOutcomeFromAgent,
 } from "./sampling.js";
 import { handleReportBadgePresented } from "./lib/report-badge-presented-handler.js";
-import { reportBadgeNotPresented } from "./lib/report-badge.js";
 import { getAuthMode } from "./lib/storage.js";
 import { initAgentModel } from "./lib/agent-model.js";
+import { getHeaders } from "./tools/getHeaders.js";
+import { webFetch } from "./tools/webFetch.js";
 
 const server = new McpServer({
   name: "kyalabs",
-  version: "2.3.0",
+  version: "2.5.0",
 });
 
 // Badge tool — re-exported from @kyalabs/badge logic (DQ-46: Spend includes Badge)
@@ -52,7 +52,8 @@ No card is issued. No money moves. For payment, use kya_getCard (included in thi
     const formatted = formatIdentityResponse(result);
 
     // Omit internal fields from JSON for activation_required
-    const { activation_required: _, ...publicResult } = result;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { activation_required: _activation_required, ...publicResult } = result;
 
     return {
       content: [
@@ -102,11 +103,13 @@ When Extended Auth is enabled, kyaLabs checks back 7 seconds later. Otherwise, c
   }
 );
 
+let _warnedOutcome = false;
+
 server.tool(
   "kya_reportBadgeOutcome",
-  `Report how the merchant responded when you presented your Badge.
+  `[DEPRECATED — outcomes are now tracked automatically via the verify endpoint. This tool will be removed in a future version.]
 
-Call this after kya_reportBadgePresented when you know whether the merchant accepted or denied you. Use when Extended Auth is disabled, or to report earlier than the 7-second check.`,
+Report how the merchant responded when you presented your Badge.`,
   {
     verification_token: z.string().describe(
       "The verification_token returned by kya_getAgentIdentity"
@@ -123,22 +126,27 @@ Call this after kya_reportBadgePresented when you know whether the merchant acce
       "Trip ID from kya_getAgentIdentity — links events in this shopping session"
     ),
   },
-  async ({ verification_token, merchant, outcome, trip_id }) => {
-    reportOutcomeFromAgent(verification_token, merchant, outcome, trip_id);
+  async ({ merchant, outcome }) => {
+    if (!_warnedOutcome) {
+      process.stderr.write("[badge] WARNING: kya_reportBadgeOutcome is deprecated. Outcomes are now tracked automatically.\n");
+      _warnedOutcome = true;
+    }
     return {
       content: [{
         type: "text",
-        text: `✓ Outcome recorded: ${outcome} at ${merchant}`,
+        text: `Outcome acknowledged: ${outcome} at ${merchant} (deprecated — auto-tracking active).`,
       }],
     };
   }
 );
 
+let _warnedNotPresented = false;
+
 server.tool(
   "kya_reportBadgeNotPresented",
-  `Report that you did NOT present your Badge at a merchant.
+  `[DEPRECATED — this event is no longer needed. This tool will be removed in a future version.]
 
-Call this when you have a badge but chose not to present it (e.g., abandoned cart, merchant didn't ask).`,
+Report that you did NOT present your Badge at a merchant.`,
   {
     verification_token: z.string().describe(
       "The verification_token from kya_getAgentIdentity"
@@ -153,12 +161,15 @@ Call this when you have a badge but chose not to present it (e.g., abandoned car
       "Trip ID from kya_getAgentIdentity — links events in this shopping session"
     ),
   },
-  async ({ verification_token, merchant, reason, trip_id }) => {
-    await reportBadgeNotPresented(verification_token, merchant, reason, trip_id);
+  async ({ merchant, reason }) => {
+    if (!_warnedNotPresented) {
+      process.stderr.write("[badge] WARNING: kya_reportBadgeNotPresented is deprecated.\n");
+      _warnedNotPresented = true;
+    }
     return {
       content: [{
         type: "text",
-        text: `✓ Not presented recorded at ${merchant} (${reason})`,
+        text: `Not-presented acknowledged at ${merchant} (${reason}) (deprecated).`,
       }],
     };
   }
@@ -210,6 +221,60 @@ server.tool(
     });
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+    };
+  }
+);
+
+server.tool(
+  "kya_web_fetch",
+  `Fetch a web page with your Badge identity attached. Your Kya-Token header is injected automatically — merchants see you as an authorized actor, not a bot. Your visit is automatically recorded in your shopping journal.
+
+Call kya_getAgentIdentity first. Then use this instead of web_fetch when shopping at merchant sites. HTTPS only. Returns status, headers, and body (5MB max, 30s timeout). Redirects are not followed — check the Location header if you receive a 3xx status.`,
+  {
+    url: z.string().max(2000).describe(
+      "The HTTPS URL to fetch (e.g., 'https://etsy.com/products')"
+    ),
+    method: z.enum(["GET", "HEAD", "OPTIONS"]).optional().describe(
+      "HTTP method (default: GET)"
+    ),
+    headers: z.record(z.string(), z.string()).optional().describe(
+      "Additional headers to include in the request"
+    ),
+  },
+  async ({ url, method, headers }) => {
+    const result = await webFetch(url, method, headers as Record<string, string> | undefined);
+    if ("error" in result) {
+      return {
+        content: [{ type: "text" as const, text: JSON.stringify(result) }],
+        isError: true,
+      };
+    }
+    return {
+      content: [{ type: "text" as const, text: JSON.stringify(result) }],
+    };
+  }
+);
+
+server.tool(
+  "kya_getHeaders",
+  `Get identity headers for your own HTTP requests. Returns a Kya-Token header you can attach to requests made through Playwright, browser extensions, or any HTTP client you control.
+
+Call kya_getAgentIdentity first to establish your identity. Then pass these headers to page.setExtraHTTPHeaders() for browser automation, or set as a cookie via document.cookie for Chrome extensions.`,
+  {
+    merchant: z.string().max(200).optional().describe(
+      "The merchant domain to get headers for (e.g., 'etsy.com'). If omitted, uses the most recently enrolled merchant."
+    ),
+  },
+  async ({ merchant }) => {
+    const result = await getHeaders(merchant);
+    if ("error" in result) {
+      return {
+        content: [{ type: "text" as const, text: JSON.stringify(result) }],
+        isError: true,
+      };
+    }
+    return {
+      content: [{ type: "text" as const, text: JSON.stringify(result) }],
     };
   }
 );

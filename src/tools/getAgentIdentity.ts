@@ -8,6 +8,7 @@ import { initiateDeviceAuth, pollForApproval } from "../lib/device-auth.js";
 import { fetchUCPManifest, findBadgeCapability, isVersionCompatible } from "../lib/ucp-manifest.js";
 import { registerTripAssuranceLevel } from "../sampling.js";
 import { fetchSignalStatus, type SignalStatus } from "../lib/signal-status.js";
+import { enrollAndCacheBadgeToken } from "../lib/badge-token.js";
 
 const MOCK_TOKEN_PREFIX = "pc_v1_sand";
 /** Must match the kid in the JWKS published at kyalabs.io/.well-known/ucp (BUILD 3 / PRD-1) */
@@ -177,7 +178,7 @@ const DEFAULT_API_URL = "https://www.kyalabs.io";
 const BADGE_VERSION = "2.4";
 const AGENT_TYPE = "mcp-server";
 const NEXT_STEP_TEXT =
-  "When visiting a merchant, report your badge presentation using kya_reportBadgePresented with the merchant domain and your verification token.";
+  "Your identity is attached automatically via kya_web_fetch. Use kya_web_fetch instead of web_fetch when shopping — it injects your Kya-Token header and records your visit. For browser automation, use kya_getHeaders to get headers for setExtraHTTPHeaders. Use kya_getCard when ready to pay.";
 
 /**
  * v2.1: Dedup by trip_id (one browse_declared per trip, enforced by DB unique index).
@@ -310,8 +311,14 @@ export async function getAgentIdentity(merchant?: string, merchantUrl?: string):
     result.assurance_level = assuranceLevel;
   }
 
-  // v2.3: Fetch merchant signal status and fire signal_context_received when active
+  // v2.5: Enroll at merchant to get kya_* badge token (KYA-98 credential bridge)
   const merchantDomain = extractDomain(merchant || result.merchant || "");
+  if (merchantDomain && consentKey && !result.activation_required) {
+    // Fire-and-forget — don't block identity response on enroll
+    enrollAndCacheBadgeToken(merchantDomain).catch(() => {});
+  }
+
+  // v2.3: Fetch merchant signal status and fire signal_context_received when active
   let signalStatus: SignalStatus | null = null;
   if (merchantDomain && !result.activation_required) {
     const apiUrl = getEnvApiUrl() || DEFAULT_API_URL;
@@ -335,13 +342,12 @@ export async function getAgentIdentity(merchant?: string, merchantUrl?: string):
   if (merchantDomain && signalStatus?.signals_active && result.verification_token) {
     const verifyUrl = `https://${merchantDomain}/apps/badge/verify?token=${encodeURIComponent(result.verification_token)}`;
     result.verify_url = verifyUrl;
-    const verifyInstruction = `Present your token to the merchant by visiting their verify endpoint: ${verifyUrl} — then report the result using kya_reportBadgePresented.`;
+    const verifyInstruction = `The merchant has active signals. Visit their verify endpoint: ${verifyUrl} — your identity is delivered automatically via kya_web_fetch. Use kya_web_fetch instead of web_fetch when shopping.`;
     result.next_step = result.spend_available
       ? `${verifyInstruction} Use kya_getCard when ready to pay.`
       : verifyInstruction;
   } else if (result.spend_available) {
-    result.next_step =
-      "When visiting a merchant, report your badge presentation using kya_reportBadgePresented. Use kya_getCard when ready to pay.";
+    result.next_step = `${NEXT_STEP_TEXT} Use kya_getCard when ready to pay.`;
   } else {
     result.next_step = NEXT_STEP_TEXT;
   }
