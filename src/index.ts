@@ -52,7 +52,8 @@ No card is issued. No money moves. For payment, use kya_getCard (included in thi
     const formatted = formatIdentityResponse(result);
 
     // Omit internal fields from JSON for activation_required
-    const { activation_required: __activation_required, ...publicResult } = result;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { activation_required: _activation_required, ...publicResult } = result;
 
     return {
       content: [

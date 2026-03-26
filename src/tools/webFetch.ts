@@ -126,20 +126,40 @@ export async function webFetch(
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
   } catch (err) {
-    if (err instanceof Error && err.name === "AbortError") {
+    if (err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError")) {
       return { error: "Request timed out", code: "TIMEOUT" };
     }
     return { error: "Failed to fetch URL", code: "FETCH_ERROR" };
   }
 
-  // 8. Read body with size cap
-  let body: string;
+  // 8. Read body with size cap (streaming to avoid loading full response into memory)
+  let body = "";
   let truncated = false;
   try {
-    body = await response.text();
-    if (body.length > MAX_BODY_BYTES) {
-      body = body.slice(0, MAX_BODY_BYTES);
-      truncated = true;
+    if (response.body) {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let bytesRead = 0;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        body += decoder.decode(value, { stream: true });
+        bytesRead += value.byteLength;
+        if (bytesRead >= MAX_BODY_BYTES) {
+          body = body.slice(0, MAX_BODY_BYTES);
+          truncated = true;
+          await reader.cancel();
+          break;
+        }
+      }
+      body += decoder.decode(); // flush remaining
+    } else {
+      // Fallback if no readable stream
+      body = await response.text();
+      if (body.length > MAX_BODY_BYTES) {
+        body = body.slice(0, MAX_BODY_BYTES);
+        truncated = true;
+      }
     }
   } catch (err) {
     process.stderr.write(`[badge] body read failed: ${err instanceof Error ? err.message : err}\n`);
@@ -162,7 +182,7 @@ export async function webFetch(
     url: response.url || url,
   };
 
-  // 11. Auto-declare (fire-and-forget)
+  // 10. Auto-declare (fire-and-forget)
   fireBrowseDeclared(merchant);
 
   return result;
