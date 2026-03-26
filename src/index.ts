@@ -9,12 +9,16 @@ import {
   initSampling,
   onTripStarted,
   onServerClose,
-} from "./sampling.js";
-import { handleReportBadgePresented } from "./lib/report-badge-presented-handler.js";
-import { getAuthMode } from "./lib/storage.js";
-import { initAgentModel } from "./lib/agent-model.js";
+  handleReportBadgePresented,
+  getAuthMode,
+  initAgentModel,
+  configureReportBadge,
+} from "@kyalabs/shared-identity";
 import { getHeaders } from "./tools/getHeaders.js";
 import { webFetch } from "./tools/webFetch.js";
+
+// Configure shared report-badge with mcp-server agent type
+configureReportBadge({ agentType: "mcp-server" });
 
 const server = new McpServer({
   name: "kyalabs",
