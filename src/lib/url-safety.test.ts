@@ -105,6 +105,20 @@ describe("isPublicOrigin", () => {
     expect(isPublicOrigin("https://[fd00::1]")).toBe(false);
   });
 
+  it("blocks IPv4-mapped IPv6 loopback (::ffff:127.0.0.1)", () => {
+    expect(isPublicOrigin("https://[::ffff:127.0.0.1]")).toBe(false);
+  });
+
+  it("blocks IPv4-mapped IPv6 private ranges", () => {
+    expect(isPublicOrigin("https://[::ffff:10.0.0.1]")).toBe(false);
+    expect(isPublicOrigin("https://[::ffff:192.168.1.1]")).toBe(false);
+    expect(isPublicOrigin("https://[::ffff:169.254.169.254]")).toBe(false);
+  });
+
+  it("allows IPv4-mapped IPv6 public addresses", () => {
+    expect(isPublicOrigin("https://[::ffff:8.8.8.8]")).toBe(true);
+  });
+
   // --- Malformed ---
 
   it("blocks malformed URLs", () => {

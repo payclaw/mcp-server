@@ -38,10 +38,23 @@ export function isPublicOrigin(origin: string): boolean {
     if (a === 0) return false;                             // 0.0.0.0/8
   }
 
-  // Block IPv6 loopback/link-local
+  // Block IPv6 loopback/link-local/mapped
   if (hostname.startsWith("[")) {
     const inner = hostname.slice(1, -1).toLowerCase();
     if (inner === "::1" || inner.startsWith("fe80:") || inner.startsWith("fc") || inner.startsWith("fd")) return false;
+
+    // Unwrap IPv4-mapped IPv6 (::ffff:a.b.c.d or ::ffff:XXYY:ZZWW hex form)
+    const mappedDotted = inner.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+    if (mappedDotted) {
+      return isPublicOrigin(origin.replace(/\[.*\]/, mappedDotted[1]));
+    }
+    const mappedHex = inner.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+    if (mappedHex) {
+      const hi = parseInt(mappedHex[1], 16);
+      const lo = parseInt(mappedHex[2], 16);
+      const ipv4 = `${(hi >> 8) & 0xff}.${hi & 0xff}.${(lo >> 8) & 0xff}.${lo & 0xff}`;
+      return isPublicOrigin(origin.replace(/\[.*\]/, ipv4));
+    }
   }
 
   return true;

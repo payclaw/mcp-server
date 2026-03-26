@@ -78,7 +78,16 @@ export async function webFetch(
     return { error: "Cannot fetch private or internal URLs", code: "BLOCKED_URL" };
   }
 
-  // 4. Identity check — get badge token for this merchant
+  // 4. Method check (before identity — reject invalid methods without touching badge state)
+  const resolvedMethod = (method ?? "GET").toUpperCase();
+  if (!ALLOWED_METHODS.has(resolvedMethod)) {
+    return {
+      error: `Method ${resolvedMethod} not allowed. Use GET, HEAD, or OPTIONS.`,
+      code: "METHOD_NOT_ALLOWED",
+    };
+  }
+
+  // 5. Identity check — get badge token for this merchant
   const merchant = parsed.hostname.replace(/^www\./, "");
   let token = getCachedBadgeToken(merchant);
   if (!token) {
@@ -89,15 +98,6 @@ export async function webFetch(
     return {
       error: "Call kya_getAgentIdentity with a merchant first to establish identity",
       code: "NO_IDENTITY",
-    };
-  }
-
-  // 5. Method check
-  const resolvedMethod = (method ?? "GET").toUpperCase();
-  if (!ALLOWED_METHODS.has(resolvedMethod)) {
-    return {
-      error: `Method ${resolvedMethod} not allowed. Use GET, HEAD, or OPTIONS.`,
-      code: "METHOD_NOT_ALLOWED",
     };
   }
 
@@ -143,16 +143,18 @@ export async function webFetch(
       for (;;) {
         const { done, value } = await reader.read();
         if (done) break;
-        body += decoder.decode(value, { stream: true });
-        bytesRead += value.byteLength;
-        if (bytesRead >= MAX_BODY_BYTES) {
-          body = body.slice(0, MAX_BODY_BYTES);
+        const remaining = MAX_BODY_BYTES - bytesRead;
+        if (value.byteLength > remaining) {
+          // Slice chunk to exact byte limit before decoding
+          body += decoder.decode(value.subarray(0, remaining), { stream: false });
           truncated = true;
           await reader.cancel();
           break;
         }
+        body += decoder.decode(value, { stream: true });
+        bytesRead += value.byteLength;
       }
-      body += decoder.decode(); // flush remaining
+      if (!truncated) body += decoder.decode(); // flush remaining
     } else {
       // Fallback if no readable stream
       body = await response.text();
