@@ -66,19 +66,19 @@ export async function webFetch(
     return { error: "Invalid URL", code: "INVALID_URL" };
   }
 
-  // 3. Scheme check — HTTPS only (HTTP allowed in tests)
+  // 2. Scheme check — HTTPS only (HTTP allowed in tests)
   const isHttps = parsed.protocol === "https:";
   const isTestHttp = parsed.protocol === "http:" && process.env.VITEST;
   if (!isHttps && !isTestHttp) {
     return { error: "URL must use HTTPS", code: "INVALID_URL" };
   }
 
-  // 4. SSRF check
+  // 3. SSRF check
   if (!isPublicOrigin(url)) {
     return { error: "Cannot fetch private or internal URLs", code: "BLOCKED_URL" };
   }
 
-  // 5. Identity check — get badge token for this merchant
+  // 4. Identity check — get badge token for this merchant
   const merchant = parsed.hostname.replace(/^www\./, "");
   let token = getCachedBadgeToken(merchant);
   if (!token) {
@@ -92,7 +92,7 @@ export async function webFetch(
     };
   }
 
-  // 6. Method check
+  // 5. Method check
   const resolvedMethod = (method ?? "GET").toUpperCase();
   if (!ALLOWED_METHODS.has(resolvedMethod)) {
     return {
@@ -101,7 +101,7 @@ export async function webFetch(
     };
   }
 
-  // 7. Build request headers — our token wins over any agent-provided Kya-Token
+  // 6. Build request headers — our token wins over any agent-provided Kya-Token
   // Filter out case-variant kya-token headers to prevent agents from overriding
   const sanitizedHeaders: Record<string, string> = {};
   if (headers) {
@@ -116,7 +116,7 @@ export async function webFetch(
     "Kya-Token": token,
   };
 
-  // 7. Fetch
+  // 7. Execute fetch
   let response: Response;
   try {
     response = await fetch(url, {
@@ -141,7 +141,8 @@ export async function webFetch(
       body = body.slice(0, MAX_BODY_BYTES);
       truncated = true;
     }
-  } catch {
+  } catch (err) {
+    process.stderr.write(`[badge] body read failed: ${err instanceof Error ? err.message : err}\n`);
     body = "";
   }
 

@@ -2,12 +2,14 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 
 vi.mock("../lib/badge-token.js", () => ({
   getCachedBadgeToken: vi.fn(),
+  enrollAndCacheBadgeToken: vi.fn(),
 }));
 
 import { getHeaders } from "./getHeaders.js";
-import { getCachedBadgeToken } from "../lib/badge-token.js";
+import { getCachedBadgeToken, enrollAndCacheBadgeToken } from "../lib/badge-token.js";
 
 const mockGetToken = vi.mocked(getCachedBadgeToken);
+const mockEnroll = vi.mocked(enrollAndCacheBadgeToken);
 
 describe("getHeaders", () => {
   const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
@@ -16,26 +18,54 @@ describe("getHeaders", () => {
     vi.clearAllMocks();
   });
 
-  it("returns Kya-Token header with kya_* badge token", () => {
+  it("returns Kya-Token header with kya_* badge token", async () => {
     mockGetToken.mockReturnValue("kya_abc123def456");
-    const result = getHeaders();
+    const result = await getHeaders();
     expect(result).toEqual({
       headers: { "Kya-Token": "kya_abc123def456" },
     });
   });
 
-  it("returns NO_IDENTITY error when no badge token cached", () => {
+  it("returns NO_IDENTITY error when no badge token cached and no merchant", async () => {
     mockGetToken.mockReturnValue(null);
-    const result = getHeaders();
+    const result = await getHeaders();
     expect(result).toEqual({
       error: "Call kya_getAgentIdentity with a merchant first to establish identity",
       code: "NO_IDENTITY",
     });
   });
 
-  it("does not log the token value to stderr", () => {
+  it("attempts enrollment when no cached token and merchant provided", async () => {
+    mockGetToken.mockReturnValue(null);
+    mockEnroll.mockResolvedValue("kya_enrolled_on_fly");
+
+    const result = await getHeaders("etsy.com");
+
+    expect(mockEnroll).toHaveBeenCalledWith("etsy.com");
+    expect(result).toEqual({
+      headers: { "Kya-Token": "kya_enrolled_on_fly" },
+    });
+  });
+
+  it("returns NO_IDENTITY when enrollment also fails", async () => {
+    mockGetToken.mockReturnValue(null);
+    mockEnroll.mockResolvedValue(null);
+
+    const result = await getHeaders("etsy.com");
+    expect(result).toMatchObject({ code: "NO_IDENTITY" });
+  });
+
+  it("returns NO_IDENTITY when enrollment throws", async () => {
+    mockGetToken.mockReturnValue(null);
+    mockEnroll.mockRejectedValue(new Error("network error"));
+
+    const result = await getHeaders("etsy.com");
+    expect(result).toMatchObject({ code: "NO_IDENTITY" });
+  });
+
+  it("does not log the token value to stderr", async () => {
     mockGetToken.mockReturnValue("kya_secret_value");
-    getHeaders();
+    await getHeaders();
     const stderrOutput = stderrSpy.mock.calls.map((c) => String(c[0])).join("");
     expect(stderrOutput).not.toContain("kya_secret_value");
   });

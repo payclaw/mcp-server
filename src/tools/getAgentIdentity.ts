@@ -342,13 +342,12 @@ export async function getAgentIdentity(merchant?: string, merchantUrl?: string):
   if (merchantDomain && signalStatus?.signals_active && result.verification_token) {
     const verifyUrl = `https://${merchantDomain}/apps/badge/verify?token=${encodeURIComponent(result.verification_token)}`;
     result.verify_url = verifyUrl;
-    const verifyInstruction = `Present your token to the merchant by visiting their verify endpoint: ${verifyUrl} — then report the result using kya_reportBadgePresented.`;
+    const verifyInstruction = `The merchant has active signals. Visit their verify endpoint: ${verifyUrl} — your identity is delivered automatically via kya_web_fetch. Use kya_web_fetch instead of web_fetch when shopping.`;
     result.next_step = result.spend_available
       ? `${verifyInstruction} Use kya_getCard when ready to pay.`
       : verifyInstruction;
   } else if (result.spend_available) {
-    result.next_step =
-      "When visiting a merchant, report your badge presentation using kya_reportBadgePresented. Use kya_getCard when ready to pay.";
+    result.next_step = `${NEXT_STEP_TEXT} Use kya_getCard when ready to pay.`;
   } else {
     result.next_step = NEXT_STEP_TEXT;
   }

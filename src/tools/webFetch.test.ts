@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import type { WebFetchSuccess } from "./webFetch.js";
 
 vi.mock("../lib/storage.js", () => ({
   getOrCreateInstallId: vi.fn(() => "inst-aaaa-bbbb-cccc-dddddddddddd"),
@@ -70,7 +71,7 @@ describe("webFetch", () => {
       mockFetch.mockResolvedValue(mockResponse("ok"));
       const result = await webFetch("https://example.com");
       expect(mockEnroll).toHaveBeenCalledWith("example.com");
-      expect((result as any).status).toBe(200);
+      expect((result as WebFetchSuccess).status).toBe(200);
     });
   });
 
@@ -163,13 +164,14 @@ describe("webFetch", () => {
         truncated: false,
         url: "https://example.com",
       });
-      expect((result as any).headers).toBeDefined();
+      expect((result as WebFetchSuccess).headers).toBeDefined();
     });
 
     it("injects Kya-Token header in outbound request", async () => {
       mockFetch.mockResolvedValue(mockResponse("ok"));
       await webFetch("https://example.com");
       const fetchCall = mockFetch.mock.calls.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (c: any[]) => c[0] === "https://example.com"
       );
       expect(fetchCall).toBeDefined();
@@ -181,7 +183,7 @@ describe("webFetch", () => {
         mockResponse("ok", { headers: { "content-type": "text/html", "set-cookie": "session=abc" } })
       );
       const result = await webFetch("https://example.com");
-      expect((result as any).headers["set-cookie"]).toBeUndefined();
+      expect((result as WebFetchSuccess).headers["set-cookie"]).toBeUndefined();
     });
 
     it("preserves content-type in response headers", async () => {
@@ -189,7 +191,7 @@ describe("webFetch", () => {
         mockResponse("ok", { headers: { "content-type": "application/json" } })
       );
       const result = await webFetch("https://example.com");
-      expect((result as any).headers["content-type"]).toBe("application/json");
+      expect((result as WebFetchSuccess).headers["content-type"]).toBe("application/json");
     });
 
     it("preserves location header on redirects", async () => {
@@ -197,14 +199,15 @@ describe("webFetch", () => {
         mockResponse("", { status: 301, headers: { location: "https://example.com/new" } })
       );
       const result = await webFetch("https://example.com/old");
-      expect((result as any).status).toBe(301);
-      expect((result as any).headers["location"]).toBe("https://example.com/new");
+      expect((result as WebFetchSuccess).status).toBe(301);
+      expect((result as WebFetchSuccess).headers["location"]).toBe("https://example.com/new");
     });
 
     it("uses redirect: manual", async () => {
       mockFetch.mockResolvedValue(mockResponse("ok"));
       await webFetch("https://example.com");
       const fetchCall = mockFetch.mock.calls.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (c: any[]) => c[0] === "https://example.com"
       );
       expect(fetchCall![1].redirect).toBe("manual");
@@ -214,8 +217,8 @@ describe("webFetch", () => {
       const bigBody = "x".repeat(5_242_881);
       mockFetch.mockResolvedValue(mockResponse(bigBody));
       const result = await webFetch("https://example.com");
-      expect((result as any).truncated).toBe(true);
-      expect((result as any).body.length).toBe(5_242_880);
+      expect((result as WebFetchSuccess).truncated).toBe(true);
+      expect((result as WebFetchSuccess).body.length).toBe(5_242_880);
     });
 
     it("returns TIMEOUT error on AbortError", async () => {
@@ -236,6 +239,7 @@ describe("webFetch", () => {
       mockFetch.mockResolvedValue(mockResponse("ok"));
       await webFetch("https://example.com", "GET", { "Accept": "text/html" });
       const fetchCall = mockFetch.mock.calls.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (c: any[]) => c[0] === "https://example.com"
       );
       expect(fetchCall![1].headers["Accept"]).toBe("text/html");
@@ -247,6 +251,7 @@ describe("webFetch", () => {
       mockFetch.mockResolvedValue(mockResponse("ok"));
       await webFetch("https://example.com", "GET", { "Kya-Token": "evil" });
       const fetchCall = mockFetch.mock.calls.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (c: any[]) => c[0] === "https://example.com"
       );
       // Our token wins, not the agent's
@@ -261,7 +266,8 @@ describe("webFetch", () => {
       mockFetch.mockResolvedValue(mockResponse("ok"));
       await webFetch("https://www.etsy.com/products");
 
-      const declareCalls = mockFetch.mock.calls.filter((c: any[]) => {
+      const declareCalls = mockFetch.mock.calls.filter(// eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (c: any[]) => {
         try {
           const body = JSON.parse(c[1]?.body || "{}");
           return body.event_type === "browse_declared";
@@ -286,8 +292,8 @@ describe("webFetch", () => {
 
       const result = await webFetch("https://example.com");
       // Tool still returns success
-      expect((result as any).status).toBe(200);
-      expect((result as any).body).toBe("ok");
+      expect((result as WebFetchSuccess).status).toBe(200);
+      expect((result as WebFetchSuccess).body).toBe("ok");
     });
 
     it("does not fire declare when identity check fails", async () => {

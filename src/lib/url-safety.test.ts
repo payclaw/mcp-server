@@ -3,7 +3,7 @@ import { isPublicOrigin } from "./url-safety.js";
 
 describe("isPublicOrigin", () => {
   beforeEach(() => {
-    process.env.VITEST = "true";
+    vi.stubEnv("VITEST", "true");
   });
 
   afterEach(() => {
@@ -23,7 +23,7 @@ describe("isPublicOrigin", () => {
   });
 
   it("blocks HTTP when VITEST is not set", () => {
-    delete process.env.VITEST;
+    vi.stubEnv("VITEST", "");
     expect(isPublicOrigin("http://example.com")).toBe(false);
   });
 
@@ -38,9 +38,11 @@ describe("isPublicOrigin", () => {
     expect(isPublicOrigin("https://evil.localhost")).toBe(false);
   });
 
-  it("blocks 127.0.0.1", () => {
+  it("blocks 127.0.0.0/8 loopback range", () => {
     expect(isPublicOrigin("https://127.0.0.1")).toBe(false);
     expect(isPublicOrigin("https://127.0.0.1:8080")).toBe(false);
+    expect(isPublicOrigin("https://127.255.255.255")).toBe(false);
+    expect(isPublicOrigin("https://127.0.0.2")).toBe(false);
   });
 
   it("blocks IPv6 loopback ::1", () => {
@@ -67,6 +69,18 @@ describe("isPublicOrigin", () => {
   it("blocks 192.168.0.0/16", () => {
     expect(isPublicOrigin("https://192.168.1.1")).toBe(false);
     expect(isPublicOrigin("https://192.168.0.1")).toBe(false);
+  });
+
+  // --- RFC6598 CGN ---
+
+  it("blocks 100.64.0.0/10 (RFC6598 carrier-grade NAT)", () => {
+    expect(isPublicOrigin("https://100.64.0.1")).toBe(false);
+    expect(isPublicOrigin("https://100.127.255.255")).toBe(false);
+  });
+
+  it("allows 100.x outside /10 range", () => {
+    expect(isPublicOrigin("https://100.63.255.255")).toBe(true);
+    expect(isPublicOrigin("https://100.128.0.1")).toBe(true);
   });
 
   // --- Link-local / metadata ---

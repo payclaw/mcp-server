@@ -123,6 +123,16 @@ describe("enrollAndCacheBadgeToken", () => {
     expect(token).toBeNull();
     expect(mockFetch).not.toHaveBeenCalled();
   });
+
+  it("returns null when response is OK but missing badge_token", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ merchant: "etsy.com", enrolled: true }),
+    });
+
+    const token = await enrollAndCacheBadgeToken("etsy.com");
+    expect(token).toBeNull();
+  });
 });
 
 describe("getCachedBadgeToken", () => {

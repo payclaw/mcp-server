@@ -52,7 +52,7 @@ No card is issued. No money moves. For payment, use kya_getCard (included in thi
     const formatted = formatIdentityResponse(result);
 
     // Omit internal fields from JSON for activation_required
-    const { activation_required: _, ...publicResult } = result;
+    const { activation_required: __activation_required, ...publicResult } = result;
 
     return {
       content: [
@@ -259,9 +259,13 @@ server.tool(
   `Get identity headers for your own HTTP requests. Returns a Kya-Token header you can attach to requests made through Playwright, browser extensions, or any HTTP client you control.
 
 Call kya_getAgentIdentity first to establish your identity. Then pass these headers to page.setExtraHTTPHeaders() for browser automation, or set as a cookie via document.cookie for Chrome extensions.`,
-  {},
-  async () => {
-    const result = getHeaders();
+  {
+    merchant: z.string().max(200).optional().describe(
+      "The merchant domain to get headers for (e.g., 'etsy.com'). If omitted, uses the most recently enrolled merchant."
+    ),
+  },
+  async ({ merchant }) => {
+    const result = await getHeaders(merchant);
     if ("error" in result) {
       return {
         content: [{ type: "text" as const, text: JSON.stringify(result) }],

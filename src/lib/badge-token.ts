@@ -77,10 +77,7 @@ export async function enrollAndCacheBadgeToken(merchant: string): Promise<string
  */
 export function getCachedBadgeToken(merchant?: string): string | null {
   if (merchant) {
-    const token = badgeTokenCache.get(merchant) ?? null;
-    // Keep lastEnrolledMerchant in sync so no-arg getHeaders() uses the right merchant
-    if (token) lastEnrolledMerchant = merchant;
-    return token;
+    return badgeTokenCache.get(merchant) ?? null;
   }
   // No merchant — return last enrolled
   if (lastEnrolledMerchant) {
