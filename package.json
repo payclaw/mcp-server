@@ -3,6 +3,7 @@
   "mcpName": "io.github.kyalabs-io/spend",
   "version": "2.5.0",
   "description": "Badge identity + virtual Visa cards for AI agents. Declare, pay, audit — on existing Visa rails. MCP-native.",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
@@ -47,6 +48,7 @@
     "LICENSE"
   ],
   "dependencies": {
+    "@kyalabs/shared-identity": "^1.0.0",
     "@modelcontextprotocol/sdk": "^1.28.0",
     "zod": "^3.24.0 || ^4.0.0"
   },

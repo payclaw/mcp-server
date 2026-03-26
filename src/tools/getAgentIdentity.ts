@@ -1,14 +1,21 @@
-// Canonical: mcp-server (divergent) | v2.3 | Do not sync — edit independently
 import crypto from "node:crypto";
 import * as api from "../api/client.js";
-import { getStoredConsentKey, getOrCreateInstallId } from "../lib/storage.js";
-import { getEnvApiKey, getEnvApiUrl } from "../lib/env.js";
-import { getAgentModel } from "../lib/agent-model.js";
-import { initiateDeviceAuth, pollForApproval } from "../lib/device-auth.js";
-import { fetchUCPManifest, findBadgeCapability, isVersionCompatible } from "../lib/ucp-manifest.js";
-import { registerTripAssuranceLevel } from "../sampling.js";
-import { fetchSignalStatus, type SignalStatus } from "../lib/signal-status.js";
-import { enrollAndCacheBadgeToken } from "../lib/badge-token.js";
+import {
+  getStoredConsentKey,
+  getOrCreateInstallId,
+  getEnvApiKey,
+  getEnvApiUrl,
+  getAgentModel,
+  initiateDeviceAuth,
+  pollForApproval,
+  fetchUCPManifest,
+  findBadgeCapability,
+  isVersionCompatible,
+  registerTripAssuranceLevel,
+  fetchSignalStatus,
+  type SignalStatus,
+  enrollAndCacheBadgeToken,
+} from "@kyalabs/shared-identity";
 
 const MOCK_TOKEN_PREFIX = "pc_v1_sand";
 /** Must match the kid in the JWKS published at kyalabs.io/.well-known/ucp (BUILD 3 / PRD-1) */

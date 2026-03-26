@@ -1,4 +1,8 @@
-// Canonical: mcp-server | Synced: 0.7.3 | Structurally divergent — badge-server has badge-only subset
+/**
+ * MCP-server API client — uses shared identity utilities with enhanced
+ * security hardening (SEC-009/010/013/014) and payment endpoints.
+ */
+
 import type {
   ApiIntentResponse,
   ApiCardResponse,
@@ -6,8 +10,7 @@ import type {
   ApiBalanceResponse,
   ApiAgentIdentityResponse,
 } from "../types.js";
-import { getStoredConsentKey } from "../lib/storage.js";
-import { getEnvApiUrl } from "../lib/env.js";
+import { getStoredConsentKey, getEnvApiUrl } from "@kyalabs/shared-identity";
 
 export class BadgeApiError extends Error {
   constructor(
@@ -77,7 +80,7 @@ async function request<T>(url: string, init: RequestInit): Promise<T> {
     }
   } catch (err) {
     clearTimeout(timeout);
-    if (err instanceof Error && err.name === "AbortError") {
+    if (err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError")) {
       log("error", `${method} ${urlPath} → timeout`);
       throw new BadgeApiError("Request timed out. Please try again.");
     }
@@ -91,7 +94,7 @@ async function request<T>(url: string, init: RequestInit): Promise<T> {
   if (res.status === 401) {
     log("error", `${method} ${urlPath} → 401 unauthorized`);
     throw new BadgeApiError(
-      "Your kyaLabs session has expired. To continue, add a permanent API key to your MCP config:\n\n" +
+      "kyaLabs session has expired. To continue, add a permanent API key to your MCP config:\n\n" +
       "  1. Get a key: https://www.kyalabs.io/dashboard/keys\n" +
       "  2. Add to your MCP config: KYA_API_KEY=pk_live_...\n\n" +
       "Permanent keys don't expire. See: https://www.kyalabs.io/docs/mcp-setup",
@@ -100,12 +103,13 @@ async function request<T>(url: string, init: RequestInit): Promise<T> {
   }
 
   if (!res.ok) {
+    const rawBody = await res.text();
     let body: string;
     try {
-      const json = (await res.json()) as { error?: string; message?: string };
+      const json = JSON.parse(rawBody) as { error?: string; message?: string };
       body = json.error ?? json.message ?? JSON.stringify(json);
     } catch {
-      body = await res.text();
+      body = rawBody;
     }
     log("error", `${method} ${urlPath} → ${res.status}: ${body.slice(0, 200)}`);
     throw new BadgeApiError(body, res.status);
@@ -114,6 +118,8 @@ async function request<T>(url: string, init: RequestInit): Promise<T> {
   log("info", `${method} ${urlPath} → ${res.status}`);
   return (await res.json()) as T;
 }
+
+// --- Payment endpoints (mcp-server only) ---
 
 export async function createIntent(
   merchantUrl: string,
@@ -167,6 +173,8 @@ export async function getBalance(): Promise<ApiBalanceResponse> {
   });
 }
 
+// --- Identity endpoints ---
+
 export async function getAgentIdentity(
   sessionId?: string,
   merchant?: string,
@@ -197,50 +205,10 @@ export function getBaseUrl(): string {
   return "https://www.kyalabs.io";
 }
 
-export interface IntrospectResult {
-  active: boolean;
-  assurance_level?: string | null;
-  scope?: string;
-  credential_provider?: string;
-  badge_status?: string;
-  token_type?: string;
-  install_id?: string;
-  agent_type?: string;
-}
-
-const MOCK_TOKEN_PREFIX = "pc_v1_sand";
-
-/**
- * v2.2: Introspect a badge token to retrieve assurance_level and status.
- * Mock tokens (pc_v1_sand*) are skipped — they return active:false from the API.
- * Graceful null on any failure (timeout, network, non-ok response).
- */
-export async function introspectBadgeToken(token: string): Promise<IntrospectResult | null> {
-  if (token.startsWith(MOCK_TOKEN_PREFIX)) return null;
-
-  const apiUrl = getEnvApiUrl() || "https://www.kyalabs.io";
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 3000);
-
-  try {
-    const res = await fetch(`${apiUrl}/api/oauth/introspect`, {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({ token }),
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-    if (!res.ok) return null;
-    return (await res.json()) as IntrospectResult;
-  } catch {
-    clearTimeout(timer);
-    return null;
-  }
-}
+export { type IntrospectResult, introspectBadgeToken } from "@kyalabs/shared-identity";
 
 /**
  * Call agent-identity with a Bearer token (API key or OAuth access token).
- * Used when consent key comes from device flow (OAuth token) instead of KYA_API_KEY.
  */
 export async function getAgentIdentityWithToken(
   baseUrl: string,

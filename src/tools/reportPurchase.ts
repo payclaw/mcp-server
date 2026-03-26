@@ -1,7 +1,7 @@
 import { getIntent, updateIntent, deductBalance, getBalance } from "../mock/store.js";
 import { randomUUID } from "crypto";
 import * as api from "../api/client.js";
-import { getStoredConsentKey } from "../lib/storage.js";
+import { getStoredConsentKey } from "@kyalabs/shared-identity";
 
 export interface ReportPurchaseInput {
   intent_id: string;

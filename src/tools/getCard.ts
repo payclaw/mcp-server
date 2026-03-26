@@ -1,6 +1,6 @@
 import { createIntent, getBalance, MOCK_CARD } from "../mock/store.js";
 import * as api from "../api/client.js";
-import { getStoredConsentKey } from "../lib/storage.js";
+import { getStoredConsentKey } from "@kyalabs/shared-identity";
 
 export interface GetCardInput {
   merchant: string;

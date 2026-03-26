@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { getAgentIdentity, formatIdentityResponse } from "./getAgentIdentity.js";
 import * as api from "../api/client.js";
-import * as storage from "../lib/storage.js";
+import * as sharedIdentity from "@kyalabs/shared-identity";
 
 vi.mock("../api/client.js", async (importActual) => {
   const actual = await importActual<typeof import("../api/client.js")>();
@@ -17,13 +17,28 @@ vi.mock("../api/client.js", async (importActual) => {
     getBalance: vi.fn(),
   };
 });
-vi.mock("../lib/storage.js");
-vi.mock("../lib/device-auth.js");
-vi.mock("../lib/ucp-manifest.js");
+vi.mock("@kyalabs/shared-identity", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@kyalabs/shared-identity")>();
+  return {
+    ...actual,
+    getStoredConsentKey: vi.fn(),
+    getOrCreateInstallId: vi.fn(() => "inst-test"),
+    getEnvApiUrl: vi.fn(() => null),
+    getEnvExtendedAuth: vi.fn(() => false),
+    initiateDeviceAuth: vi.fn(),
+    pollForApproval: vi.fn(),
+    fetchUCPManifest: vi.fn(() => null),
+    findBadgeCapability: vi.fn(() => null),
+    isVersionCompatible: vi.fn(() => false),
+    registerTripAssuranceLevel: vi.fn(),
+    fetchSignalStatus: vi.fn(() => null),
+    enrollAndCacheBadgeToken: vi.fn(() => Promise.resolve(null)),
+  };
+});
 
 describe("getAgentIdentity — 401 handling", () => {
   beforeEach(() => {
-    vi.mocked(storage.getStoredConsentKey).mockReturnValue("pc_v1_expired_token");
+    vi.mocked(sharedIdentity.getStoredConsentKey).mockReturnValue("pc_v1_expired_token");
     vi.mocked(api.isApiMode).mockReturnValue(true);
     vi.mocked(api.getBaseUrl).mockReturnValue("https://www.kyalabs.io");
     // No KYA_API_KEY → uses OAuth token path (callWithOAuthToken)
@@ -71,7 +86,7 @@ describe("getAgentIdentity — 401 handling", () => {
   it("surfaces session_expired when API key gets 401", async () => {
     // Simulate KYA_API_KEY path (callWithKey) — set the env var
     process.env.KYA_API_KEY = "pk_live_invalid_key";
-    vi.mocked(storage.getStoredConsentKey).mockReturnValue("pk_live_invalid_key");
+    vi.mocked(sharedIdentity.getStoredConsentKey).mockReturnValue("pk_live_invalid_key");
 
     const authError = new api.BadgeApiError(
       "kyaLabs session has expired. To continue, add a permanent API key to your MCP config:\n\n" +

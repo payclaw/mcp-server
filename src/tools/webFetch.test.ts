@@ -1,25 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { WebFetchSuccess } from "./webFetch.js";
 
-vi.mock("../lib/storage.js", () => ({
-  getOrCreateInstallId: vi.fn(() => "inst-aaaa-bbbb-cccc-dddddddddddd"),
-}));
-
-vi.mock("../lib/agent-model.js", () => ({
-  getAgentModel: vi.fn(() => "test-model"),
-}));
-
-vi.mock("../lib/env.js", () => ({
-  getEnvApiUrl: vi.fn(() => ""),
-}));
-
-vi.mock("../lib/badge-token.js", () => ({
-  getCachedBadgeToken: vi.fn(),
-  enrollAndCacheBadgeToken: vi.fn(),
-}));
+vi.mock("@kyalabs/shared-identity", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@kyalabs/shared-identity")>();
+  return {
+    ...actual,
+    getOrCreateInstallId: vi.fn(() => "inst-aaaa-bbbb-cccc-dddddddddddd"),
+    getAgentModel: vi.fn(() => "test-model"),
+    getEnvApiUrl: vi.fn(() => ""),
+    getCachedBadgeToken: vi.fn(),
+    enrollAndCacheBadgeToken: vi.fn(),
+  };
+});
 
 import { webFetch } from "./webFetch.js";
-import { getCachedBadgeToken, enrollAndCacheBadgeToken } from "../lib/badge-token.js";
+import { getCachedBadgeToken, enrollAndCacheBadgeToken } from "@kyalabs/shared-identity";
 
 const mockGetCached = vi.mocked(getCachedBadgeToken);
 const mockEnroll = vi.mocked(enrollAndCacheBadgeToken);

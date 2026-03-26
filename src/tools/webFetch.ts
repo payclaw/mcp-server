@@ -9,11 +9,14 @@
  * - Manual redirects (prevents token leak to redirect targets)
  */
 
-import { getOrCreateInstallId } from "../lib/storage.js";
-import { getAgentModel } from "../lib/agent-model.js";
-import { getEnvApiUrl } from "../lib/env.js";
-import { isPublicOrigin } from "../lib/url-safety.js";
-import { enrollAndCacheBadgeToken, getCachedBadgeToken } from "../lib/badge-token.js";
+import {
+  getOrCreateInstallId,
+  getAgentModel,
+  getEnvApiUrl,
+  isPublicOrigin,
+  enrollAndCacheBadgeToken,
+  getCachedBadgeToken,
+} from "@kyalabs/shared-identity";
 import { randomUUID } from "node:crypto";
 
 const MAX_BODY_BYTES = 5_242_880; // 5MB
