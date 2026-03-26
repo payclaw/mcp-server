@@ -14,6 +14,7 @@ describe("reportBadgePresented", () => {
   const mockFetch = vi.fn();
 
   beforeEach(() => {
+    mockFetch.mockClear();
     vi.stubGlobal("fetch", mockFetch);
     mockFetch.mockResolvedValue({ ok: true });
   });
@@ -174,6 +175,7 @@ describe("reportBadgeNotPresented", () => {
   const mockFetch = vi.fn();
 
   beforeEach(() => {
+    mockFetch.mockClear();
     vi.stubGlobal("fetch", mockFetch);
     mockFetch.mockResolvedValue({ ok: true });
   });
