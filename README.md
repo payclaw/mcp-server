@@ -97,9 +97,17 @@ Badge issues a tokenized credential: an ES256-signed JWT, signed by kya's privat
 | When | What | Why |
 |------|------|-----|
 | **On install** | Nothing | We help agents shop. If they're not shopping, we don't need anything |
-| **On first tool call** | install_id (random UUID), merchant, agent_type, event_type, timestamp | Minimum viable signal to reduce agent friction at merchants and with labs |
-| **On verified identity** | + hashed user token, intent scope (checkout, etc.) | Only required where login traditionally required (i.e. checkout) to prove there's a real person authorizing the agent's next step |
+| **On server start** | Anonymous ping — Badge version and MCP client name. No identifiers stored on your machine | So we know Badge is actively running. If this number ever diverges from active agents, it tells us something is broken in the pipeline — not something about you |
+| **On first shopping trip** | install_id (random UUID, stored locally at `~/.kya/install_id`), merchant, agent_type, event_type, timestamp | Minimum viable signal to reduce agent friction at merchants |
+| **On verified identity** | + hashed user token, intent scope (checkout, etc.) | Only required where login is traditionally required (i.e. checkout) to prove there's a real person authorizing the agent's next step |
 | **On Spend (card issuance)** | + full transaction trail: intent, amount, merchant, audit log | Card network compliance, gated behind consent + MFA |
+
+The server start ping contains no persistent identifiers — a new random session ID is generated
+each time and never saved to disk. You can disable it entirely:
+
+```json
+"env": { "KYA_PING": "false" }
+```
 
 The install_id is a file we wrote to your disk. You can delete it (`rm ~/.kya/install_id`) and get a new one.
 
