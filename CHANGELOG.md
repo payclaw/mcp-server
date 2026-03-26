@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.6.0] - 2026-03-26 — Badge 2.0 + Shared Identity + Server Ping
+
+### Added
+- `kya_web_fetch` tool — fetch with automatic Kya-Token header injection + SSRF protection
+- `kya_getHeaders` tool — identity headers for Playwright/browser automation
+- Anonymous server ping on MCP startup (opt-out: `KYA_PING=false`)
+- Badge token enrollment in `getAgentIdentity` flow (credential bridge)
+
+### Changed
+- Shared identity code extracted to `@kyalabs/shared-identity` (~2,400 lines removed)
+- `kya_reportBadgeOutcome` and `kya_reportBadgeNotPresented` deprecated (outcomes auto-tracked)
+- `NEXT_STEP_TEXT` updated to reference `kya_web_fetch`
+- Added `"type": "module"` to package.json
+- SSRF protection: full 127.0.0.0/8 loopback, RFC6598 CGN, IPv4-mapped IPv6
+- Streaming body reader with precise byte-level truncation
+- README data philosophy updated with server ping disclosure
+
 ## [2.3.0] - 2026-03-17 — Merchant Signal Awareness
 
 ### Added
