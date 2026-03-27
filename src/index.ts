@@ -23,7 +23,7 @@ configureReportBadge({ agentType: "mcp-server" });
 
 const server = new McpServer({
   name: "kyalabs",
-  version: "2.6.0",
+  version: "2.6.1",
 });
 
 // Badge tool — re-exported from @kyalabs/badge logic (DQ-46: Spend includes Badge)
@@ -295,7 +295,7 @@ async function main() {
   initAgentModel(server.server);
 
   // Tier 1: Anonymous server ping (opt-out: KYA_PING=false)
-  fireServerPing("2.6.0", "mcp-server");
+  fireServerPing("2.6.1", "mcp-server");
 
   process.on("SIGINT", async () => { onServerClose(); await flushPendingBrowse(); process.exit(0); });
   process.on("SIGTERM", async () => { onServerClose(); await flushPendingBrowse(); process.exit(0); });

@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.6.1] - 2026-03-27
+
+### Fixed
+- Server ping now defers 2s so `agent_client` is detected from MCP handshake (was always "unknown")
+- Ping includes `server_type: "mcp-server"` to distinguish from `@kyalabs/badge` pings
+
 ## [2.6.0] - 2026-03-26 — Badge 2.0 + Shared Identity + Server Ping
 
 ### Added
