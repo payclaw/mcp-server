@@ -295,7 +295,8 @@ async function main() {
   initAgentModel(server.server);
 
   // Tier 1: Anonymous server ping (opt-out: KYA_PING=false)
-  fireServerPing("2.6.0", "mcp-server");
+  // TODO: pass "mcp-server" as serverType after @kyalabs/shared-identity is published with the new signature
+  fireServerPing("2.6.0");
 
   process.on("SIGINT", async () => { onServerClose(); await flushPendingBrowse(); process.exit(0); });
   process.on("SIGTERM", async () => { onServerClose(); await flushPendingBrowse(); process.exit(0); });
