@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.6.2] - 2026-03-28
+
+### Fixed
+- `agent_client` detection now reads lazily from MCP handshake instead of caching eagerly at startup (was always "unknown" due to race with transport init)
+
+### Added
+- Ping payload includes `platform` field (`darwin`/`linux`/`win32`) for traffic segmentation
+- Bumped `@kyalabs/shared-identity` to 1.3.0
+
 ## [2.6.1] - 2026-03-27
 
 ### Fixed

@@ -295,7 +295,7 @@ async function main() {
   initAgentModel(server.server);
 
   // Tier 1: Anonymous server ping (opt-out: KYA_PING=false)
-  fireServerPing("2.6.1", "mcp-server");
+  fireServerPing("2.6.2", "mcp-server");
 
   process.on("SIGINT", async () => { onServerClose(); await flushPendingBrowse(); process.exit(0); });
   process.on("SIGTERM", async () => { onServerClose(); await flushPendingBrowse(); process.exit(0); });
