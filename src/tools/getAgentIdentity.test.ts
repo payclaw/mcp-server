@@ -6,6 +6,7 @@ import {
   _resetIdentitySession,
 } from "./getAgentIdentity.js";
 import * as api from "../api/client.js";
+import type { ApiAgentIdentityResponse } from "../types.js";
 import * as sharedIdentity from "@kyalabs/shared-identity";
 
 vi.mock("../api/client.js", async (importActual) => {
@@ -132,15 +133,32 @@ beforeEach(() => {
   });
 
   it("clears cached identity session when the response has no verification token", async () => {
+    const activeIdentity: ApiAgentIdentityResponse & { merchant: string } = {
+      agent_disclosure: "badge active",
+      verification_token: "jwt_badge_token",
+      trust_url: "https://www.kyalabs.io/trust",
+      contact: "agent_identity@kyalabs.io",
+      principal_verified: true,
+      mfa_confirmed: false,
+      merchant: "test-merchant",
+    };
+    const activationRequiredIdentity: ApiAgentIdentityResponse & {
+      activation_required: true;
+      merchant: string;
+    } = {
+      agent_disclosure: "activation required",
+      verification_token: "",
+      trust_url: "https://www.kyalabs.io/trust",
+      contact: "agent_identity@kyalabs.io",
+      principal_verified: false,
+      mfa_confirmed: false,
+      activation_required: true,
+      merchant: "test-merchant",
+    };
+
     vi.mocked(api.getAgentIdentityWithToken)
-      .mockResolvedValueOnce({
-        verification_token: "jwt_badge_token",
-        merchant: "test-merchant",
-      } as any)
-      .mockResolvedValueOnce({
-        activation_required: true,
-        merchant: "test-merchant",
-      } as any);
+      .mockResolvedValueOnce(activeIdentity)
+      .mockResolvedValueOnce(activationRequiredIdentity);
 
     await getAgentIdentity("test-merchant");
     expect(getLatestIdentitySession()?.verificationToken).toBe("jwt_badge_token");
