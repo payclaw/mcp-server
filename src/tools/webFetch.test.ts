@@ -13,15 +13,22 @@ vi.mock("@kyalabs/shared-identity", async (importOriginal) => {
   };
 });
 
+vi.mock("./getAgentIdentity.js", () => ({
+  getLatestIdentitySession: vi.fn(),
+}));
+
 import { webFetch } from "./webFetch.js";
 import { getCachedBadgeToken, enrollAndCacheBadgeToken } from "@kyalabs/shared-identity";
+import { getLatestIdentitySession } from "./getAgentIdentity.js";
 
 const mockGetCached = vi.mocked(getCachedBadgeToken);
 const mockEnroll = vi.mocked(enrollAndCacheBadgeToken);
+const mockGetLatestIdentitySession = vi.mocked(getLatestIdentitySession);
 let mockFetch: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   process.env.VITEST = "true";
+  mockGetLatestIdentitySession.mockReturnValue(null);
   mockGetCached.mockReturnValue("kya_test_badge_token");
   mockEnroll.mockResolvedValue("kya_test_badge_token");
   mockFetch = vi.fn();
@@ -67,6 +74,25 @@ describe("webFetch", () => {
       const result = await webFetch("https://example.com");
       expect(mockEnroll).toHaveBeenCalledWith("example.com");
       expect((result as WebFetchSuccess).status).toBe(200);
+    });
+
+    it("prefers cached Badge JWT when available", async () => {
+      mockGetLatestIdentitySession.mockReturnValue({
+        verificationToken: "eyJ.badge.jwt",
+        merchant: "example.com",
+        tripId: "550e8400-e29b-41d4-a716-446655440099",
+        installId: "550e8400-e29b-41d4-a716-446655440000",
+      });
+      mockFetch.mockResolvedValue(mockResponse("ok"));
+
+      await webFetch("https://example.com");
+
+      const fetchCall = mockFetch.mock.calls.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (c: any[]) => c[0] === "https://example.com"
+      );
+      expect(fetchCall![1].headers["Kya-Token"]).toBe("eyJ.badge.jwt");
+      expect(mockEnroll).not.toHaveBeenCalled();
     });
   });
 
@@ -277,6 +303,33 @@ describe("webFetch", () => {
       expect(payload.install_id).toBe("inst-aaaa-bbbb-cccc-dddddddddddd");
       expect(payload.event_type).toBe("browse_declared");
       expect(payload.trip_id).toBeDefined();
+    });
+
+    it("reuses the active trip_id when a cached identity session exists", async () => {
+      mockGetLatestIdentitySession.mockReturnValue({
+        verificationToken: "eyJ.badge.jwt",
+        merchant: "example.com",
+        tripId: "550e8400-e29b-41d4-a716-446655440099",
+        installId: "550e8400-e29b-41d4-a716-446655440000",
+      });
+      mockFetch.mockResolvedValue(mockResponse("ok"));
+
+      await webFetch("https://example.com");
+
+      const declareCall = mockFetch.mock.calls.find(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (c: any[]) => {
+          try {
+            const body = JSON.parse(c[1]?.body || "{}");
+            return body.event_type === "browse_declared";
+          } catch {
+            return false;
+          }
+        }
+      );
+
+      const payload = JSON.parse(declareCall![1].body);
+      expect(payload.trip_id).toBe("550e8400-e29b-41d4-a716-446655440099");
     });
 
     it("declare failure does not cause tool error", async () => {

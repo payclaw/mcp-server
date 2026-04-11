@@ -179,6 +179,7 @@ export async function getAgentIdentity(
   sessionId?: string,
   merchant?: string,
   tripId?: string,
+  installId?: string,
 ): Promise<ApiAgentIdentityResponse> {
   const { baseUrl, apiKey } = getConfig();
   return request<ApiAgentIdentityResponse>(`${baseUrl}/api/agent-identity`, {
@@ -188,6 +189,7 @@ export async function getAgentIdentity(
       session_id: sessionId,
       ...(merchant ? { merchant } : {}),
       ...(tripId ? { trip_id: tripId } : {}),
+      ...(installId ? { install_id: installId } : {}),
     }),
   });
 }
@@ -214,7 +216,8 @@ export async function getAgentIdentityWithToken(
   baseUrl: string,
   token: string,
   merchant?: string,
-  tripId?: string
+  tripId?: string,
+  installId?: string,
 ): Promise<ApiAgentIdentityResponse> {
   return request<ApiAgentIdentityResponse>(`${baseUrl}/api/agent-identity`, {
     method: "POST",
@@ -225,6 +228,7 @@ export async function getAgentIdentityWithToken(
     body: JSON.stringify({
       ...(merchant ? { merchant } : {}),
       ...(tripId ? { trip_id: tripId } : {}),
+      ...(installId ? { install_id: installId } : {}),
     }),
   });
 }

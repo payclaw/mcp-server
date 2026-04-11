@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { getAgentIdentity, formatIdentityResponse } from "./getAgentIdentity.js";
+import {
+  getAgentIdentity,
+  formatIdentityResponse,
+  getLatestIdentitySession,
+  _resetIdentitySession,
+} from "./getAgentIdentity.js";
 import * as api from "../api/client.js";
+import type { ApiAgentIdentityResponse } from "../types.js";
 import * as sharedIdentity from "@kyalabs/shared-identity";
 
 vi.mock("../api/client.js", async (importActual) => {
@@ -37,10 +43,11 @@ vi.mock("@kyalabs/shared-identity", async (importOriginal) => {
 });
 
 describe("getAgentIdentity — 401 handling", () => {
-  beforeEach(() => {
-    vi.mocked(sharedIdentity.getStoredConsentKey).mockReturnValue("pc_v1_expired_token");
-    vi.mocked(api.isApiMode).mockReturnValue(true);
-    vi.mocked(api.getBaseUrl).mockReturnValue("https://www.kyalabs.io");
+beforeEach(() => {
+  _resetIdentitySession();
+  vi.mocked(sharedIdentity.getStoredConsentKey).mockReturnValue("pc_v1_expired_token");
+  vi.mocked(api.isApiMode).mockReturnValue(true);
+  vi.mocked(api.getBaseUrl).mockReturnValue("https://www.kyalabs.io");
     // No KYA_API_KEY → uses OAuth token path (callWithOAuthToken)
     delete process.env.KYA_API_KEY;
   });
@@ -123,5 +130,40 @@ describe("getAgentIdentity — 401 handling", () => {
     const formatted = formatIdentityResponse(result);
     expect(formatted).toContain("SESSION EXPIRED");
     expect(formatted).toContain(result.message);
+  });
+
+  it("clears cached identity session when the response has no verification token", async () => {
+    const activeIdentity: ApiAgentIdentityResponse & { merchant: string } = {
+      agent_disclosure: "badge active",
+      verification_token: "jwt_badge_token",
+      trust_url: "https://www.kyalabs.io/trust",
+      contact: "agent_identity@kyalabs.io",
+      principal_verified: true,
+      mfa_confirmed: false,
+      merchant: "test-merchant",
+    };
+    const activationRequiredIdentity: ApiAgentIdentityResponse & {
+      activation_required: true;
+      merchant: string;
+    } = {
+      agent_disclosure: "activation required",
+      verification_token: "",
+      trust_url: "https://www.kyalabs.io/trust",
+      contact: "agent_identity@kyalabs.io",
+      principal_verified: false,
+      mfa_confirmed: false,
+      activation_required: true,
+      merchant: "test-merchant",
+    };
+
+    vi.mocked(api.getAgentIdentityWithToken)
+      .mockResolvedValueOnce(activeIdentity)
+      .mockResolvedValueOnce(activationRequiredIdentity);
+
+    await getAgentIdentity("test-merchant");
+    expect(getLatestIdentitySession()?.verificationToken).toBe("jwt_badge_token");
+
+    await getAgentIdentity("test-merchant");
+    expect(getLatestIdentitySession()).toBeNull();
   });
 });
