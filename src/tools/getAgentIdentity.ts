@@ -389,6 +389,8 @@ export async function getAgentIdentity(merchant?: string, merchantUrl?: string):
       tripId,
       installId,
     };
+  } else {
+    latestIdentitySession = null;
   }
 
   return result;

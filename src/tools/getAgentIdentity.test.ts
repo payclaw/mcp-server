@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { getAgentIdentity, formatIdentityResponse } from "./getAgentIdentity.js";
+import {
+  getAgentIdentity,
+  formatIdentityResponse,
+  getLatestIdentitySession,
+  _resetIdentitySession,
+} from "./getAgentIdentity.js";
 import * as api from "../api/client.js";
 import * as sharedIdentity from "@kyalabs/shared-identity";
 
@@ -37,10 +42,11 @@ vi.mock("@kyalabs/shared-identity", async (importOriginal) => {
 });
 
 describe("getAgentIdentity — 401 handling", () => {
-  beforeEach(() => {
-    vi.mocked(sharedIdentity.getStoredConsentKey).mockReturnValue("pc_v1_expired_token");
-    vi.mocked(api.isApiMode).mockReturnValue(true);
-    vi.mocked(api.getBaseUrl).mockReturnValue("https://www.kyalabs.io");
+beforeEach(() => {
+  _resetIdentitySession();
+  vi.mocked(sharedIdentity.getStoredConsentKey).mockReturnValue("pc_v1_expired_token");
+  vi.mocked(api.isApiMode).mockReturnValue(true);
+  vi.mocked(api.getBaseUrl).mockReturnValue("https://www.kyalabs.io");
     // No KYA_API_KEY → uses OAuth token path (callWithOAuthToken)
     delete process.env.KYA_API_KEY;
   });
@@ -123,5 +129,23 @@ describe("getAgentIdentity — 401 handling", () => {
     const formatted = formatIdentityResponse(result);
     expect(formatted).toContain("SESSION EXPIRED");
     expect(formatted).toContain(result.message);
+  });
+
+  it("clears cached identity session when the response has no verification token", async () => {
+    vi.mocked(api.getAgentIdentityWithToken)
+      .mockResolvedValueOnce({
+        verification_token: "jwt_badge_token",
+        merchant: "test-merchant",
+      } as any)
+      .mockResolvedValueOnce({
+        activation_required: true,
+        merchant: "test-merchant",
+      } as any);
+
+    await getAgentIdentity("test-merchant");
+    expect(getLatestIdentitySession()?.verificationToken).toBe("jwt_badge_token");
+
+    await getAgentIdentity("test-merchant");
+    expect(getLatestIdentitySession()).toBeNull();
   });
 });
