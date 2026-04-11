@@ -93,6 +93,13 @@ export interface IdentityResult {
   verify_url?: string;
 }
 
+export interface IdentitySessionContext {
+  verificationToken: string;
+  merchant?: string;
+  tripId?: string;
+  installId?: string;
+}
+
 function buildSessionExpiredResult(merchant?: string, message?: string): IdentityResult {
   return {
     product_name: "Badge by kyaLabs",
@@ -180,6 +187,7 @@ async function fireSignalContextReceived(
 }
 
 let pendingActivation: Promise<IdentityResult> | null = null;
+let latestIdentitySession: IdentitySessionContext | null = null;
 
 const DEFAULT_API_URL = "https://www.kyalabs.io";
 const BADGE_VERSION = "2.4";
@@ -210,13 +218,16 @@ export async function flushPendingBrowse(): Promise<void> {
  * [EC-5] Isolated try/catch — failure never affects identity response.
  * v2.1: Includes trip_id to link browse_declared to subsequent events.
  */
-async function fireBrowseDeclared(merchant: string | undefined, tripId: string): Promise<void> {
+async function fireBrowseDeclared(
+  merchant: string | undefined,
+  tripId: string,
+  installId: string,
+): Promise<void> {
   if (browseFiredFor.has(tripId)) return;
   browseFiredFor.add(tripId);
 
   try {
     const apiUrl = getEnvApiUrl() || DEFAULT_API_URL;
-    const installId = getOrCreateInstallId();
 
     const payload = {
       install_id: installId,
@@ -260,6 +271,15 @@ export function _resetBrowseDeclaredCache(): void {
   browseFiredFor.clear();
 }
 
+export function getLatestIdentitySession(): IdentitySessionContext | null {
+  return latestIdentitySession;
+}
+
+export function _resetIdentitySession(): void {
+  if (process.env.VITEST !== "true") return;
+  latestIdentitySession = null;
+}
+
 /**
  * Get agent identity token — Badge by kyaLabs.
  * When no consent key exists: initiates device flow, returns activation instructions,
@@ -271,10 +291,11 @@ export function _resetBrowseDeclaredCache(): void {
 export async function getAgentIdentity(merchant?: string, merchantUrl?: string): Promise<IdentityResult> {
   // v2.1: Generate trip_id for this shopping session
   const tripId = crypto.randomUUID();
+  const installId = getOrCreateInstallId();
 
   // [EC-4] Fire browse_declared BEFORE returning, on ALL paths
   // [EC-5] Isolated — failure does not affect identity response
-  pendingBrowse = fireBrowseDeclared(merchant, tripId).catch(() => {});
+  pendingBrowse = fireBrowseDeclared(merchant, tripId, installId).catch(() => {});
   pendingBrowse.then(() => { pendingBrowse = null; });
 
   const consentKey = getStoredConsentKey();
@@ -283,7 +304,7 @@ export async function getAgentIdentity(merchant?: string, merchantUrl?: string):
 
   // Backward compat: KYA_API_KEY set → use it, device flow never triggers
   if (consentKey && getEnvApiKey()) {
-    result = await callWithKey(consentKey, merchant, tripId);
+    result = await callWithKey(consentKey, merchant, tripId, installId);
   } else if (!consentKey) {
     // No key: initiate device flow (reuse pending to avoid duplicate pollers)
     if (pendingActivation) return pendingActivation;
@@ -296,7 +317,7 @@ export async function getAgentIdentity(merchant?: string, merchantUrl?: string):
     }
   } else {
     // Key from file/memory (OAuth token from device flow)
-    result = await callWithOAuthToken(consentKey, merchant, tripId);
+    result = await callWithOAuthToken(consentKey, merchant, tripId, installId);
   }
 
   // UCP enrichment: check merchant manifest when merchantUrl provided
@@ -331,7 +352,6 @@ export async function getAgentIdentity(merchant?: string, merchantUrl?: string):
     const apiUrl = getEnvApiUrl() || DEFAULT_API_URL;
     signalStatus = await fetchSignalStatus(merchantDomain, apiUrl);
     if (signalStatus?.signals_active && result.verification_token) {
-      const installId = getOrCreateInstallId();
       fireSignalContextReceived(
         signalStatus,
         tripId,
@@ -362,6 +382,14 @@ export async function getAgentIdentity(merchant?: string, merchantUrl?: string):
   // v2.1: Attach trip_id + agent_model
   result.trip_id = tripId;
   result.agent_model = getAgentModel();
+  if (result.verification_token) {
+    latestIdentitySession = {
+      verificationToken: result.verification_token,
+      merchant: merchant || result.merchant,
+      tripId,
+      installId,
+    };
+  }
 
   return result;
 }
@@ -401,7 +429,12 @@ async function enrichWithUCP(result: IdentityResult, merchantUrl: string): Promi
   };
 }
 
-async function callWithKey(apiKey: string, merchant?: string, tripId?: string): Promise<IdentityResult> {
+async function callWithKey(
+  apiKey: string,
+  merchant?: string,
+  tripId?: string,
+  installId?: string,
+): Promise<IdentityResult> {
   if (!api.isApiMode()) {
     return {
       product_name: "Badge by kyaLabs",
@@ -418,7 +451,7 @@ async function callWithKey(apiKey: string, merchant?: string, tripId?: string): 
   }
 
   try {
-    const result = await api.getAgentIdentity(undefined, merchant, tripId);
+    const result = await api.getAgentIdentity(undefined, merchant, tripId, installId);
     return {
       product_name: "Badge by kyaLabs",
       status: "active",
@@ -441,7 +474,12 @@ async function callWithKey(apiKey: string, merchant?: string, tripId?: string): 
   }
 }
 
-async function callWithOAuthToken(token: string, merchant?: string, tripId?: string): Promise<IdentityResult> {
+async function callWithOAuthToken(
+  token: string,
+  merchant?: string,
+  tripId?: string,
+  installId?: string,
+): Promise<IdentityResult> {
   if (!api.isApiMode()) {
     return identityFromOAuthToken(token, undefined, merchant);
   }
@@ -451,7 +489,8 @@ async function callWithOAuthToken(token: string, merchant?: string, tripId?: str
       api.getBaseUrl(),
       token,
       merchant,
-      tripId
+      tripId,
+      installId,
     );
     return {
       product_name: "Badge by kyaLabs",

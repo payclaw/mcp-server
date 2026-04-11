@@ -18,6 +18,7 @@ import {
   getCachedBadgeToken,
 } from "@kyalabs/shared-identity";
 import { randomUUID } from "node:crypto";
+import { getLatestIdentitySession } from "./getAgentIdentity.js";
 
 const MAX_BODY_BYTES = 5_242_880; // 5MB
 const FETCH_TIMEOUT_MS = 30_000;
@@ -92,7 +93,8 @@ export async function webFetch(
 
   // 5. Identity check — get badge token for this merchant
   const merchant = parsed.hostname.replace(/^www\./, "");
-  let token = getCachedBadgeToken(merchant);
+  const identitySession = getLatestIdentitySession();
+  let token = identitySession?.verificationToken ?? getCachedBadgeToken(merchant);
   if (!token) {
     // Enroll on-the-fly for this merchant
     token = await enrollAndCacheBadgeToken(merchant);
@@ -188,7 +190,7 @@ export async function webFetch(
   };
 
   // 10. Auto-declare (fire-and-forget)
-  fireBrowseDeclared(merchant);
+  fireBrowseDeclared(merchant, identitySession?.tripId ?? null);
 
   return result;
 }
@@ -197,7 +199,7 @@ export async function webFetch(
  * Fire browse_declared event — same pattern as getAgentIdentity.ts.
  * Anonymous path, fire-and-forget, errors logged to stderr.
  */
-function fireBrowseDeclared(merchant: string): void {
+function fireBrowseDeclared(merchant: string, tripId: string | null): void {
   try {
     const apiUrl = getEnvApiUrl() || DEFAULT_API_URL;
     const installId = getOrCreateInstallId();
@@ -209,7 +211,7 @@ function fireBrowseDeclared(merchant: string): void {
       merchant,
       agent_type: AGENT_TYPE,
       agent_model: getAgentModel(),
-      trip_id: randomUUID(),
+      trip_id: tripId ?? randomUUID(),
       timestamp: Date.now(),
     };
 
