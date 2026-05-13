@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.6.3] - 2026-05-13
+
+### Security
+- Lift transitive `hono` 4.12.14 → 4.12.18 (GHSA-hm8q-7f3q-5f36 JWT exp/nbf/iat bypass, GHSA-p77w-8qqv-26rm Vary: Authorization cache leak, GHSA-9vqf-7f2p-gf9v bodyLimit bypass, GHSA-69xw-7hcm-h432 JSX XSS, GHSA-qp7p-654g-cw7p CSS injection)
+- Lift transitive `fast-uri` 3.1.0 → 3.1.2 (GHSA-q3j6-qgpj-74h6 path traversal via %2e%2e/, GHSA-v39h-62p7-jpjc host confusion)
+- Override transitive `ip-address` 10.1.0 → 10.2.0 (GHSA-v2v4-37r5-5v8g XSS in Address6) — `express-rate-limit` pins this exactly so `overrides` is required.
+- Override transitive `postcss` 8.5.9 → 8.5.14 (GHSA-qx2v-qp2m-jg93 XSS via unescaped `</style>`) — dev-only via vitest/vite.
+- No runtime impact: stdio transport doesn't load hono/express-rate-limit/ip-address code paths.
+
 ## [2.6.2] - 2026-03-28
 
 ### Fixed

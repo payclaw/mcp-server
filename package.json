@@ -1,7 +1,7 @@
 {
   "name": "@kyalabs/mcp-server",
   "mcpName": "io.github.kyalabs-io/spend",
-  "version": "2.6.2",
+  "version": "2.6.3",
   "description": "Badge identity + virtual Visa cards for AI agents. Declare, pay, audit — on existing Visa rails. MCP-native.",
   "type": "module",
   "main": "dist/index.js",
@@ -61,5 +61,9 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.58.2",
     "vitest": "^4.1.4"
+  },
+  "overrides": {
+    "ip-address": ">=10.1.1",
+    "postcss": ">=8.5.10"
   }
 }
